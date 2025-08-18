@@ -1,248 +1,75 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Überstunden – Lowpoly FPS Horror (Prototype)</title>
+  <meta charset="UTF-8">
+  <title>Overtime - Lowpoly FPS Horror</title>
   <style>
-    :root{--ui-bg:rgba(10,10,12,.6);--ui-border:rgba(255,255,255,.15);--ui-text:#e8e8f0;--accent:#8bd1ff}
-    html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#000;color:var(--ui-text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
-    #overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(1200px 600px at 50% 50%,rgba(0,0,0,.3),rgba(0,0,0,.9));z-index:20}
-    .panel{background:var(--ui-bg);border:1px solid var(--ui-border);border-radius:14px;padding:24px;max-width:720px;backdrop-filter:blur(6px);box-shadow:0 10px 30px rgba(0,0,0,.4)}
-    .panel h1{margin:0 0 8px;font-size:26px}
-    .btn{display:inline-block;background:#0d6efd;color:#fff;border:none;padding:12px 18px;border-radius:10px;font-weight:600;cursor:pointer}
-    #hud{position:fixed;inset:0;pointer-events:none;z-index:10;display:none}
-    #topbar{position:absolute;top:12px;left:50%;transform:translateX(-50%);background:var(--ui-bg);border:1px solid var(--ui-border);border-radius:999px;padding:8px 14px;font-size:14px;display:flex;gap:16px;align-items:center}
-    #status{position:absolute;bottom:12px;left:12px;background:var(--ui-bg);border:1px solid var(--ui-border);border-radius:12px;padding:10px 14px;font-size:14px;line-height:1.5;max-width:360px}
-    #batteryBar{width:140px;height:8px;background:#222;border:1px solid var(--ui-border);border-radius:999px;overflow:hidden}
-    #batteryFill{height:100%;width:100%;background:linear-gradient(90deg,#7dd3fc,#22d3ee)}
-    #crosshair{position:absolute;inset:0}
-    #crosshair::after{content:"";position:absolute;top:50%;left:50%;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;border:2px solid rgba(255,255,255,.5)}
-    #hint{position:absolute;bottom:50%;left:50%;transform:translate(-50%,28px);background:var(--ui-bg);border:1px solid var(--ui-border);padding:6px 10px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .2s;white-space:nowrap}
-    #log{position:absolute;right:12px;bottom:12px;width:320px;max-height:40vh;overflow:auto;background:var(--ui-bg);border:1px solid var(--ui-border);border-radius:12px;padding:10px;font-size:13px}
-    .muted{opacity:.75}.small{font-size:12px}
+    body { margin: 0; overflow: hidden; background: black; }
+    #startScreen {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: black; color: white; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; font-family: Arial, sans-serif;
+    }
+    button {
+      padding: 10px 20px; font-size: 18px; margin-top: 20px; cursor: pointer;
+    }
+    canvas { display: block; }
   </style>
 </head>
 <body>
-  <div id="overlay">
-    <div class="panel">
-      <h1>Überstunden – Nachtschicht</h1>
-      <p>WASD bewegen, Shift rennen, F Lampe, E interagieren · I Inventar, Esc Maus lösen.</p>
-      <button id="startBtn" class="btn">Schicht starten</button>
-      <div class="small muted" style="margin-top:8px;">Hinweis: Läuft als reines HTML5/WebGL (Three.js). Über HTTPS/Server öffnen.</div>
-    </div>
-  </div>
-
-  <div id="hud">
-    <div id="topbar">
-      <div id="clock">20:00</div><div>|</div>
-      <div id="batteryBar"><div id="batteryFill"></div></div>
-      <div class="muted small">F Lampe</div><div>|</div>
-      <div id="objective">Ziel: Melde dich am Computer an.</div>
-    </div>
-    <div id="status">
-      <div><b>Ort:</b> <span id="loc">Lobby</span></div>
-      <div><b>Hinweis:</b> <span id="tip">Finde die Mitarbeiterkarte.</span></div>
-      <div class="small muted">E Interagieren · I Inventar · P/L Speichern/Laden</div>
-    </div>
-    <div id="crosshair"></div>
-    <div id="hint">E – Interagieren</div>
-    <div id="log"></div>
+  <div id="startScreen">
+    <h1>Overtime</h1>
+    <button id="startButton">Schicht starten</button>
   </div>
 
   <script type="module">
-    import * as THREE from "https://unpkg.com/three@0.160.0/build/three.module.js";
-    import { PointerLockControls } from "https://unpkg.com/three@0.160.0/examples/jsm/controls/PointerLockControls.js";
+    import * as THREE from "https://unpkg.com/three@0.150.1/build/three.module.js";
+    import { PointerLockControls } from "https://unpkg.com/three@0.150.1/examples/jsm/controls/PointerLockControls.js";
+    import { GLTFLoader } from "https://unpkg.com/three@0.150.1/examples/jsm/loaders/GLTFLoader.js";
 
-    // DOM
-    const overlay=document.getElementById('overlay');
-    const startBtn=document.getElementById('startBtn');
-    const hud=document.getElementById('hud');
-    const clockEl=document.getElementById('clock');
-    const locEl=document.getElementById('loc');
-    const tipEl=document.getElementById('tip');
-    const objectiveEl=document.getElementById('objective');
-    const batteryFill=document.getElementById('batteryFill');
-    const hintEl=document.getElementById('hint');
-    const logEl=document.getElementById('log');
+    let camera, scene, renderer, controls;
 
-    function log(msg){ const d=document.createElement('div'); d.textContent=msg; logEl.prepend(d); }
+    const startButton = document.getElementById("startButton");
+    startButton.addEventListener("click", init);
 
-    // Three.js Grundsetup
-    const renderer=new THREE.WebGLRenderer({antialias:true});
-    renderer.setSize(innerWidth, innerHeight);
-    renderer.setPixelRatio(Math.min(devicePixelRatio,2));
-    document.body.appendChild(renderer.domElement);
+    function init() {
+      document.getElementById("startScreen").style.display = "none";
 
-    const scene=new THREE.Scene(); scene.background=new THREE.Color(0x000000);
-    const camera=new THREE.PerspectiveCamera(75, innerWidth/innerHeight, .1, 200);
-    camera.position.set(0,1.7,6);
-    const controls=new PointerLockControls(camera, renderer.domElement);
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x000000);
 
-    scene.add(new THREE.HemisphereLight(0x222233,0x000000,.2));
-    scene.add(new THREE.AmbientLight(0x111122,.15));
+      camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 
-    // Lampe / Batterie
-    let flashOn=false, battery=100, batteryLow=false;
-    const flashlight=new THREE.SpotLight(0xffffff,0.0,20,Math.PI/8,.5,1.0);
-    flashlight.position.set(0,0,0); flashlight.target.position.set(0,0,-1);
-    camera.add(flashlight); camera.add(flashlight.target); scene.add(camera);
+      renderer = new THREE.WebGLRenderer();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
 
-    // Materialien
-    const matWall=new THREE.MeshStandardMaterial({color:0x222428,roughness:.9});
-    const matFloor=new THREE.MeshStandardMaterial({color:0x1a1b1e,roughness:1});
-    const matDoor=new THREE.MeshStandardMaterial({color:0x111111,roughness:.6});
-    const matInteract=new THREE.MeshStandardMaterial({color:0x35577a,emissive:0x0d2333,emissiveIntensity:.2});
-    const matPickup=new THREE.MeshStandardMaterial({color:0x80ffb3,emissive:0x335544,emissiveIntensity:.5});
+      // PointerLockControls für First-Person
+      controls = new PointerLockControls(camera, renderer.domElement);
+      document.body.addEventListener("click", () => controls.lock());
 
-    // Welt-Helfer
-    const colliders=[], interactables=[], doors=[], pickups=[], worldLights=[], locZones=[];
-    function addCollider(m){ m.updateMatrixWorld(true); const b=new THREE.Box3().setFromObject(m); colliders.push(b); return b; }
-    function box(x,y,z,sx,sy,sz,mat){ const m=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),mat||matWall); m.position.set(x,y,z); m.receiveShadow=true; scene.add(m); return m; }
-    function addWallRect(cx,cz,w,h,t=.25,hg=3){ const y=hg/2; addCollider(box(cx,y,cz-h/2,w,hg,t)); addCollider(box(cx,y,cz+h/2,w,hg,t)); addCollider(box(cx-w/2,y,cz,t,hg,h)); addCollider(box(cx+w/2,y,cz,t,hg,h)); }
-    function addFloorRect(cx,cz,w,h){ const f=new THREE.Mesh(new THREE.BoxGeometry(w,.1,h),matFloor); f.position.set(cx,0,cz); f.receiveShadow=true; scene.add(f); }
-    function addDoorway(cx,cz,width=1.2,height=2.2,th=.2,dir='N',locked=false,key){
-      const pivot=new THREE.Object3D(); pivot.position.set(cx,0,cz); scene.add(pivot);
-      const door=new THREE.Mesh(new THREE.BoxGeometry(th,height,width),matDoor); door.position.y=height/2; door.rotation.y=(dir==='N'||dir==='S')?0:Math.PI/2; pivot.add(door);
-      const entry={pivot,door,open:false,locked,key:key||null,collider:new THREE.Box3().setFromObject(door)};
-      colliders.push(entry.collider);
-      door.userData={type:'door',ref:entry}; interactables.push(door); doors.push(entry);
-      return entry;
-    }
-    function updateDoorCollider(e){ if(e.open) return; e.door.updateMatrixWorld(true); e.collider.setFromObject(e.door); }
+      // Einfacher Boden
+      const geometry = new THREE.PlaneGeometry(100, 100);
+      const material = new THREE.MeshBasicMaterial({ color: 0x222222 });
+      const floor = new THREE.Mesh(geometry, material);
+      floor.rotation.x = -Math.PI / 2;
+      scene.add(floor);
 
-    // Karte
-    function buildWorld(){
-      addFloorRect(0,0,60,60); addWallRect(0,0,56,56);
-      addFloorRect(0,0,10,8); addWallRect(0,0,10,8);           // Lobby
-      addFloorRect(0,-7,20,4); addWallRect(0,-7,20,4);         // Flur
-      addFloorRect(-12,-7,10,8); addWallRect(-12,-7,10,8);     // Büro
-      addFloorRect(-22,-7,8,6); addWallRect(-22,-7,8,6);       // Server
-      addFloorRect(12,-7,10,8); addWallRect(12,-7,10,8);       // Archiv
-      addFloorRect(0,7,8,6); addWallRect(0,7,8,6);             // Toiletten
-      addFloorRect(0,-18,12,8); addWallRect(0,-18,12,8);       // Parkhaus
+      camera.position.set(0, 2, 5);
 
-      addDoorway(0,-3,1.4,2.2,.18,'S',false);
-      addDoorway(-7,-7,1.4,2.2,.18,'E',false);
-      addDoorway(-17,-7,1.4,2.2,.18,'E',true,'srv_key');
-      addDoorway(7,-7,1.4,2.2,.18,'W',true,'arc_key');
-      addDoorway(0,3,1.2,2.1,.18,'N',false);
-      addDoorway(0,-11,1.6,2.2,.18,'S',true,'basement_key');
-      addDoorway(0,-20,1.6,2.2,.18,'S',true,'gate_card');
-
-      const pc=box(-12,1.1,-5.2,.6,.4,.4,matInteract); pc.userData={type:'computer',id:'office_pc'}; interactables.push(pc);
-      function addPickup(x,y,z,item,label){ const m=new THREE.Mesh(new THREE.BoxGeometry(.2,.2,.2),matPickup); m.position.set(x,y,z); m.userData={type:'pickup',item,label}; scene.add(m); pickups.push(m); interactables.push(m); }
-      addPickup(-11.5,.9,-5.0,'arc_key','Archiv-Schlüssel');
-      addPickup(-12.8,.9,-6.2,'battery','Batterie');
-
-      const L1=new THREE.PointLight(0xbfd9ff,1.2,12,1.3); L1.position.set(0,2.6,-7);
-      const L2=new THREE.PointLight(0xbfd9ff,1.1,10,1.2); L2.position.set(-12,2.6,-7);
-      scene.add(L1,L2); worldLights.push(L1,L2);
-
-      locZones.push({name:'Lobby',cx:0,cz:0,w:10,h:8},{name:'Flur',cx:0,cz:-7,w:20,h:4},{name:'Großraumbüro',cx:-12,cz:-7,w:10,h:8});
-    }
-    buildWorld();
-
-    // Input/Inventory
-    const keys={w:false,a:false,s:false,d:false,shift:false};
-    const inventory=new Set();
-    function refreshInventory(){} // placeholder
-
-    addEventListener('keydown',e=>{
-      if(e.code==='KeyW')keys.w=true; if(e.code==='KeyA')keys.a=true; if(e.code==='KeyS')keys.s=true; if(e.code==='KeyD')keys.d=true;
-      if(e.code==='ShiftLeft'||e.code==='ShiftRight')keys.shift=true;
-      if(e.code==='KeyF'){ flashOn=!flashOn; flashlight.intensity=flashOn?2.0:0.0; }
-      if(e.code==='KeyE'){ tryInteract(); }
-    });
-    addEventListener('keyup',e=>{
-      if(e.code==='KeyW')keys.w=false; if(e.code==='KeyA')keys.a=false; if(e.code==='KeyS')keys.s=false; if(e.code==='KeyD')keys.d=false;
-      if(e.code==='ShiftLeft'||e.code==='ShiftRight')keys.shift=false;
-    });
-
-    // Interaktion
-    const raycaster=new THREE.Raycaster();
-    function tryInteract(){
-      raycaster.setFromCamera(new THREE.Vector2(0,0),camera);
-      const hits=raycaster.intersectObjects(interactables,false);
-      if(!hits.length||hits[0].distance>2.2) return;
-      const ud=hits[0].object.userData||{};
-      if(ud.type==='door'){ onDoor(ud.ref); }
-      else if(ud.type==='pickup'){ inventory.add(ud.item); scene.remove(hits[0].object); log(`+ ${ud.label||ud.item}`); refreshInventory(); }
-      else if(ud.type==='computer'){ log('E-Mails öffnen … bleib in der Nähe.'); }
-    }
-    function onDoor(entry){
-      if(entry.open){ entry.open=false; entry.pivot.rotation.y=0; if(entry.collider&&!colliders.includes(entry.collider)) colliders.push(entry.collider); updateDoorCollider(entry); return; }
-      if(entry.locked && entry.key && !inventory.has(entry.key)){ tipEl.textContent='Verschlossen. Benötigt: '+entry.key; return; }
-      entry.locked=false; entry.open=true; entry.pivot.rotation.y=-Math.PI/2;
-      const i=colliders.indexOf(entry.collider); if(i>=0) colliders.splice(i,1);
-    }
-
-    // Bewegung/Kollision
-    function collidesAt(pos){
-      for(const b of colliders){
-        if(pos.y<b.max.y && pos.y>b.min.y){
-          if(pos.x>b.min.x-.3 && pos.x<b.max.x+.3 && pos.z>b.min.z-.3 && pos.z<b.max.z+.3) return true;
-        }
-      } return false;
-    }
-    const speedWalk=2.2, speedRun=4.0;
-    function move(delta){
-      const f=new THREE.Vector3(), r=new THREE.Vector3(), dir=new THREE.Vector3();
-      camera.getWorldDirection(f); f.y=0; f.normalize();
-      r.crossVectors(f,new THREE.Vector3(0,1,0)).normalize().multiplyScalar(-1);
-      const sp=keys.shift?speedRun:speedWalk;
-      if(keys.w)dir.add(f); if(keys.s)dir.sub(f); if(keys.a)dir.sub(r); if(keys.d)dir.add(r);
-      if(dir.lengthSq()>0) dir.normalize().multiplyScalar(sp*delta);
-      const p=camera.position.clone();
-      const tryX=p.clone().add(new THREE.Vector3(dir.x,0,0)); if(!collidesAt(tryX)) camera.position.x=tryX.x;
-      const tryZ=camera.position.clone().add(new THREE.Vector3(0,0,dir.z)); if(!collidesAt(tryZ)) camera.position.z=tryZ.z;
-      camera.position.y=1.7;
-    }
-
-    // Game-Time/Location
-    const startTime={h:20,m:0}; let gameMinutes=0, acc=0; const secPerGameMinute=10;
-    function fmtTime(){ const t=startTime.h*60+startTime.m+gameMinutes; const h=Math.floor(t/60)%24, m=t%60; return (h<10?'0'+h:h)+':'+(m<10?'0'+m:m); }
-    function updateLocationHUD(){ const x=camera.position.x,z=camera.position.z; for(const zc of locZones){ if(Math.abs(x-zc.cx)<=zc.w/2 && Math.abs(z-zc.cz)<=zc.h/2){ locEl.textContent=zc.name; return; } } }
-
-    // Loop
-    const clock=new THREE.Clock();
-    function animate(){
-      requestAnimationFrame(animate);
-      const d=Math.min(.033, clock.getDelta());
-      if(controls.isLocked){
-        move(d);
-        if(flashOn){ battery-=d*.9; if(battery<0)battery=0; flashlight.intensity=battery>2?2.0:0.0; if(!batteryLow && battery<20){ batteryLow=true; tipEl.textContent='Batterie fast leer.'; } }
-        acc+=d; if(acc>=secPerGameMinute){ acc-=secPerGameMinute; gameMinutes++; clockEl.textContent=fmtTime(); }
-        updateLocationHUD();
-      }
-      batteryFill.style.width=Math.max(0,Math.min(100,battery)).toFixed(0)+'%';
-      renderer.render(scene,camera);
-    }
-
-    // Start/Pointer-Lock
-    startBtn.addEventListener('click',()=>{
-      overlay.style.display='none';
-      hud.style.display='block';
-      log('Schicht gestartet. Klicke ins Spielfeld für Maus-Sperre.');
       animate();
-      try{ controls.lock(); }catch(e){ log('Hinweis: Klicke ins Spielfeld, um die Maus zu sperren.'); }
-    });
-    controls.addEventListener('lock',()=>{ hud.style.display='block'; log('Maus gesperrt – Steuerung aktiv.'); });
-    controls.addEventListener('unlock',()=>{ hud.style.display='block'; log('Maus freigegeben.'); });
-    document.addEventListener('pointerlockerror',()=>{ log('Pointer-Lock-Fehler: Klicke direkt ins Canvas.'); });
-    renderer.domElement.addEventListener('pointerdown',()=>{ if(!controls.isLocked){ try{controls.lock();}catch(e){ log('Pointer-Lock blockiert – erneut klicken.'); } } });
+    }
 
-    // Resize + Hint
-    addEventListener('resize',()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); });
-    (function loopHint(){
-      if(!controls.isLocked){ hintEl.style.opacity=0; }
-      else{
-        raycaster.setFromCamera(new THREE.Vector2(0,0),camera);
-        const hits=raycaster.intersectObjects(interactables,false);
-        hintEl.style.opacity=(hits.length>0 && hits[0].distance<2.2)?1:0;
-      }
-      requestAnimationFrame(loopHint);
-    })();
+    function animate() {
+      requestAnimationFrame(animate);
+      renderer.render(scene, camera);
+    }
+
+    window.addEventListener("resize", () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
   </script>
 </body>
 </html>
