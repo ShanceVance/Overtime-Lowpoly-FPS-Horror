@@ -51,8 +51,8 @@
   </div>
 
   <script type="module">
-    import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
-    import { PointerLockControls } from 'https://unpkg.com/three@0.160.0/examples/jsm/controls/PointerLockControls.js';
+    import * as THREE from "https://unpkg.com/three@0.160.0/build/three.module.js";
+    import { PointerLockControls } from "https://unpkg.com/three@0.160.0/examples/jsm/controls/PointerLockControls.js";
 
     // DOM
     const overlay=document.getElementById('overlay');
@@ -82,7 +82,7 @@
     scene.add(new THREE.HemisphereLight(0x222233,0x000000,.2));
     scene.add(new THREE.AmbientLight(0x111122,.15));
 
-    // Lampe
+    // Lampe / Batterie
     let flashOn=false, battery=100, batteryLow=false;
     const flashlight=new THREE.SpotLight(0xffffff,0.0,20,Math.PI/8,.5,1.0);
     flashlight.position.set(0,0,0); flashlight.target.position.set(0,0,-1);
@@ -146,7 +146,7 @@
     // Input/Inventory
     const keys={w:false,a:false,s:false,d:false,shift:false};
     const inventory=new Set();
-    function refreshInventory(){} // placeholder for UI
+    function refreshInventory(){} // placeholder
 
     addEventListener('keydown',e=>{
       if(e.code==='KeyW')keys.w=true; if(e.code==='KeyA')keys.a=true; if(e.code==='KeyS')keys.s=true; if(e.code==='KeyD')keys.d=true;
