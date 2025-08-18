@@ -41,6 +41,66 @@
   </div>
   <script type="module">
     import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.module.js";
+import { PointerLockControls } from 'https://unpkg.com/three@0.152.2/examples/jsm/controls/PointerLockControls.js';
+
+// === Controls Setup ===
+const controls = new PointerLockControls(camera, document.body);
+scene.add(controls.getObject());
+
+// Taste zum aktivieren (Maus sperren)
+document.addEventListener('click', () => {
+  controls.lock();
+});
+
+// Bewegung
+const velocity = new THREE.Vector3();
+const direction = new THREE.Vector3();
+const moveForward = { state: false };
+const moveBackward = { state: false };
+const moveLeft = { state: false };
+const moveRight = { state: false };
+
+document.addEventListener('keydown', (e) => {
+  switch (e.code) {
+    case 'KeyW': moveForward.state = true; break;
+    case 'KeyS': moveBackward.state = true; break;
+    case 'KeyA': moveLeft.state = true; break;
+    case 'KeyD': moveRight.state = true; break;
+  }
+});
+document.addEventListener('keyup', (e) => {
+  switch (e.code) {
+    case 'KeyW': moveForward.state = false; break;
+    case 'KeyS': moveBackward.state = false; break;
+    case 'KeyA': moveLeft.state = false; break;
+    case 'KeyD': moveRight.state = false; break;
+  }
+});
+
+// === Update Loop ===
+const clock = new THREE.Clock();
+
+function animate() {
+  requestAnimationFrame(animate);
+
+  const delta = clock.getDelta();
+  velocity.x -= velocity.x * 10.0 * delta;
+  velocity.z -= velocity.z * 10.0 * delta;
+
+  direction.z = Number(moveForward.state) - Number(moveBackward.state);
+  direction.x = Number(moveRight.state) - Number(moveLeft.state);
+  direction.normalize();
+
+  if (moveForward.state || moveBackward.state) velocity.z -= direction.z * 400.0 * delta;
+  if (moveLeft.state || moveRight.state) velocity.x -= direction.x * 400.0 * delta;
+
+  controls.moveRight(- velocity.x * delta);
+  controls.moveForward(- velocity.z * delta);
+
+  renderer.render(scene, camera);
+}
+
+animate();
 
     const startButton = document.getElementById("startButton");
     const startScreen = document.getElementById("startScreen");
@@ -83,3 +143,4 @@
   </script>
 </body>
 </html>
+
