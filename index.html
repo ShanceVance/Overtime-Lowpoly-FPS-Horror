@@ -635,48 +635,56 @@
       renderer.render(scene, camera);
     }
 
-    /* ===== Start / Pointer Lock ===== */
-    startBtn.addEventListener('click', ()=>{
-      overlay.style.display='none';
+<!-- ===== Start / Pointer Lock ===== -->
+<script type="module">
+  // … dein bestehender Code darüber bleibt unverändert …
+
+  // Start-Button: Overlay aus, HUD an, Renderloop an, Pointer-Lock versuchen
+  startBtn.addEventListener('click', () => {
+    try {
+      overlay.style.display = 'none';
       ensureAudio();
-      hud.style.display='block';
-      log('Schicht gestartet. Tipp: Klicke ins Spielfenster für Maus-Sperre.');
-      animate();
-      try { controls.lock(); } catch(e) { log('Hinweis: Klicke ins Spielfenster, um die Maus zu sperren.'); }
-    });
+      hud.style.display = 'block';
+      log('Schicht gestartet. Tipp: Klicke ins Spielfeld für Maus-Sperre.');
+      animate();                   // Renderloop starten
+      try { controls.lock(); }     // Pointer-Lock versuchen
+      catch(e){ log('Hinweis: Klicke ins Spielfenster, um die Maus zu sperren.'); }
+    } catch(err) {
+      console.error(err);
+      alert('Startfehler: ' + err.message);
+    }
+  });
 
-    controls.addEventListener('lock', ()=>{ hud.style.display='block'; log('Maus gesperrt – Steuerung aktiv.'); });
-    controls.addEventListener('unlock', ()=>{ hud.style.display='block'; log('Maus freigegeben. Klicke ins Spiel, um fortzufahren.'); });
-    document.addEventListener('pointerlockerror', ()=>{ log('Pointer-Lock-Fehler: Browser blockiert. Klicke direkt ins Canvas.'); });
-    renderer.domElement.addEventListener('pointerdown', ()=>{
-      if(!controls.isLocked){
-        try { controls.lock(); } catch(e){ log('Pointer-Lock blockiert – klicke erneut ins Spielfenster.'); }
-      }
-    });
+  // Pointer-Lock Events + Fallback
+  controls.addEventListener('lock', ()=>{ hud.style.display='block'; log('Maus gesperrt – Steuerung aktiv.'); });
+  controls.addEventListener('unlock', ()=>{ hud.style.display='block'; log('Maus freigegeben. Klicke ins Spiel, um fortzufahren.'); });
+  document.addEventListener('pointerlockerror', ()=>{ log('Pointer-Lock-Fehler: Klicke direkt ins Canvas.'); });
 
-    /* ===== Build & Boot ===== */
-    const worldLights = [];
-    const locZones = [];
-    buildWorld();
-    initEvents();
-    refreshInventoryUI();
+  renderer.domElement.addEventListener('pointerdown', ()=>{
+    if(!controls.isLocked){
+      try { controls.lock(); } catch(e){ log('Pointer-Lock blockiert – erneut klicken.'); }
+    }
+  });
 
-    /* ===== Resize ===== */
-    window.addEventListener('resize', ()=>{
-      camera.aspect = window.innerWidth/window.innerHeight; camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    });
+  // ===== Build & Boot =====
+  buildWorld();
+  initEvents();
+  refreshInventoryUI();
 
-    /* ===== Interaction hint visibility ===== */
-    (function updateHint(){
-      if(!controls.isLocked){ hintEl.style.opacity = 0; }
-      else{
-        raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
-        const hits = raycaster.intersectObjects(interactables, false);
-        hintEl.style.opacity = (hits.length>0 && hits[0].distance<2.2) ? 1 : 0;
-      }
-      requestAnimationFrame(updateHint);
-    })();
-  </script>
-</body>
-</html>
+  // Resize
+  window.addEventListener('resize', ()=>{
+    camera.aspect = window.innerWidth/window.innerHeight; camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+
+  // Interact-Hint Loop
+  (function updateHint(){
+    if(!controls.isLocked){ hintEl.style.opacity = 0; }
+    else {
+      raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
+      const hits = raycaster.intersectObjects(interactables, false);
+      hintEl.style.opacity = (hits.length>0 && hits[0].distance<2.2) ? 1 : 0;
+    }
+    requestAnimationFrame(updateHint);
+  })();
+</script>
