@@ -116,7 +116,7 @@
     scene.background = new THREE.Color(0x000000);
 
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 200);
-    camera.position.set(0, 1.7, 6);
+    camera.position.set(0, 1.7, 1.5);
 
     const controls = new PointerLockControls(camera, renderer.domElement);
 
@@ -237,6 +237,23 @@
       scene.add(floor);
     }
 
+    // Add a room with optional door openings on each side (N,S,E,W)
+    function addRoom(cx, cz, w, h, openings={N:false,S:false,E:false,W:false}, thickness=0.25, height=3, doorW=1.6){
+      const y = height/2;
+      function addHWall(z, open){
+        if(open){
+          const seg = (w - doorW)/2; // left & right segments
+          addCollider( box(cx - (doorW/2 + seg/2), y, z, seg, height, thickness) );
+          addCollider( box(cx + (doorW/2 + seg/2), y, z, seg, height, thickness) );
+        } else {
+          addCollider( box(cx, y, z, w, height, thickness) );
+        }
+      }
+      function addVWall(x, open){
+        if(open){
+          const seg = (h - doorW)/2;
+          addCollider( box(x, y, cz - (doorW/2 + seg/2), thickness, height, seg) );
+          addCollider( box(x, y, cz + (doorW/2 + seg/2), t
     function addDoorway(cx, cz, width=1.2, height=2.2, thickness=0.2, dir='N', locked=false, key){
       // create a hinged door (thin box) on a pivot
       const pivot = new THREE.Object3D();
