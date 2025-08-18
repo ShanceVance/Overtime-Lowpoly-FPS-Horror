@@ -5,686 +5,244 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Überstunden – Lowpoly FPS Horror (Prototype)</title>
   <style>
-    :root {
-      --ui-bg: rgba(10,10,12,0.6);
-      --ui-border: rgba(255,255,255,0.15);
-      --ui-text: #e8e8f0;
-      --accent: #8bd1ff;
-      --danger: #ff4d4d;
-      --ok: #80ffb3;
-    }
-    html, body { margin:0; padding:0; height:100%; overflow:hidden; background:#000; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; color: var(--ui-text); }
-    #overlay { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:radial-gradient(1200px 600px at 50% 50%, rgba(0,0,0,0.3), rgba(0,0,0,0.9)); z-index:20; }
-    .panel { background:var(--ui-bg); border:1px solid var(--ui-border); border-radius:14px; padding:24px; max-width:720px; backdrop-filter: blur(6px); box-shadow: 0 10px 30px rgba(0,0,0,0.4); }
-    .panel h1 { margin:0 0 8px; font-size:26px; letter-spacing:0.5px; }
-    .panel p { opacity:0.9; line-height:1.6; }
-    .btn { display:inline-block; background:#0d6efd; border:none; color:white; padding:12px 18px; border-radius:10px; cursor:pointer; font-weight:600; margin-top:12px; }
-    .btn:active { transform: translateY(1px); }
-
-    #hud { position:fixed; inset:0; pointer-events:none; z-index:10; display:none; }
-    #topbar { position:absolute; top:12px; left:50%; transform:translateX(-50%); background:var(--ui-bg); border:1px solid var(--ui-border); border-radius:999px; padding:8px 14px; font-size:14px; display:flex; gap:16px; align-items:center; }
-    #status { position:absolute; bottom:12px; left:12px; background:var(--ui-bg); border:1px solid var(--ui-border); border-radius:12px; padding:10px 14px; font-size:14px; line-height:1.5; max-width:360px; }
-    #objective { font-weight:600; color:var(--accent); }
-    #batteryBar { width:140px; height:8px; background:#222; border-radius:999px; overflow:hidden; border:1px solid var(--ui-border); }
-    #batteryFill { height:100%; width:100%; background:linear-gradient(90deg, #7dd3fc, #22d3ee); }
-    #crosshair::after { content:""; position:absolute; top:50%; left:50%; width:12px; height:12px; margin:-6px 0 0 -6px; border-radius:50%; border:2px solid rgba(255,255,255,0.5); box-shadow:0 0 10px rgba(255,255,255,0.2) inset; }
-    #crosshair { position:absolute; inset:0; }
-    #hint { position:absolute; bottom:50%; left:50%; transform: translate(-50%, 28px); background:var(--ui-bg); border:1px solid var(--ui-border); padding:6px 10px; border-radius:8px; font-size:13px; opacity:0; transition: opacity .2s; white-space:nowrap; }
-
-    #log { position:absolute; right:12px; bottom:12px; width:320px; max-height:40vh; overflow:auto; background:var(--ui-bg); border:1px solid var(--ui-border); border-radius:12px; padding:10px; font-size:13px; }
-    #log div { opacity:0.95; margin-bottom:6px; }
-
-    #inventory { position:fixed; inset:0; background:rgba(0,0,0,0.7); display:none; align-items:center; justify-content:center; z-index:19; }
-    #inventory .panel { width:600px; }
-    .tag { display:inline-block; padding:6px 10px; border:1px solid var(--ui-border); background:rgba(255,255,255,0.04); margin:4px; border-radius:999px; font-size:13px; }
-
-    #workUI { position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.7); z-index:19; }
-    #workUI .bar { width:520px; height:14px; background:#111; border-radius:999px; border:1px solid var(--ui-border); overflow:hidden; }
-    #workUI .fill { width:0%; height:100%; background:linear-gradient(90deg, #8bd1ff, #7cf9d3); }
-
-    #warning { position:fixed; top:20px; right:20px; background:rgba(255,77,77,0.15); color:#fff; border:1px solid rgba(255,77,77,0.4); padding:10px 14px; border-radius:10px; display:none; z-index:25; }
-
-    .muted { opacity:0.75; }
-    .small { font-size:12px; }
+    :root{--ui-bg:rgba(10,10,12,.6);--ui-border:rgba(255,255,255,.15);--ui-text:#e8e8f0;--accent:#8bd1ff}
+    html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#000;color:var(--ui-text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+    #overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(1200px 600px at 50% 50%,rgba(0,0,0,.3),rgba(0,0,0,.9));z-index:20}
+    .panel{background:var(--ui-bg);border:1px solid var(--ui-border);border-radius:14px;padding:24px;max-width:720px;backdrop-filter:blur(6px);box-shadow:0 10px 30px rgba(0,0,0,.4)}
+    .panel h1{margin:0 0 8px;font-size:26px}
+    .btn{display:inline-block;background:#0d6efd;color:#fff;border:none;padding:12px 18px;border-radius:10px;font-weight:600;cursor:pointer}
+    #hud{position:fixed;inset:0;pointer-events:none;z-index:10;display:none}
+    #topbar{position:absolute;top:12px;left:50%;transform:translateX(-50%);background:var(--ui-bg);border:1px solid var(--ui-border);border-radius:999px;padding:8px 14px;font-size:14px;display:flex;gap:16px;align-items:center}
+    #status{position:absolute;bottom:12px;left:12px;background:var(--ui-bg);border:1px solid var(--ui-border);border-radius:12px;padding:10px 14px;font-size:14px;line-height:1.5;max-width:360px}
+    #batteryBar{width:140px;height:8px;background:#222;border:1px solid var(--ui-border);border-radius:999px;overflow:hidden}
+    #batteryFill{height:100%;width:100%;background:linear-gradient(90deg,#7dd3fc,#22d3ee)}
+    #crosshair{position:absolute;inset:0}
+    #crosshair::after{content:"";position:absolute;top:50%;left:50%;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;border:2px solid rgba(255,255,255,.5)}
+    #hint{position:absolute;bottom:50%;left:50%;transform:translate(-50%,28px);background:var(--ui-bg);border:1px solid var(--ui-border);padding:6px 10px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .2s;white-space:nowrap}
+    #log{position:absolute;right:12px;bottom:12px;width:320px;max-height:40vh;overflow:auto;background:var(--ui-bg);border:1px solid var(--ui-border);border-radius:12px;padding:10px;font-size:13px}
+    .muted{opacity:.75}.small{font-size:12px}
   </style>
 </head>
 <body>
   <div id="overlay">
     <div class="panel">
       <h1>Überstunden – Nachtschicht</h1>
-      <p>Es ist 20:00 Uhr. Du hast zugesagt, die Nachtschicht im Büro zu übernehmen. Erledige Aufgaben, halte bis 01:00 durch – oder finde einen Weg zu fliehen. Aber irgendetwas stimmt hier nicht …</p>
-      <ul>
-        <li><b>WASD</b> bewegen, <b>Shift</b> rennen, <b>F</b> Taschenlampe, <b>E</b> interagieren</li>
-        <li><b>I</b> Inventar, <b>M</b> Menü/Tipps, <b>Esc</b> Maus freigeben</li>
-      </ul>
+      <p>WASD bewegen, Shift rennen, F Lampe, E interagieren · I Inventar, Esc Maus lösen.</p>
       <button id="startBtn" class="btn">Schicht starten</button>
       <div class="small muted" style="margin-top:8px;">Hinweis: Läuft als reines HTML5/WebGL (Three.js). Über HTTPS/Server öffnen.</div>
     </div>
   </div>
 
-  <div id="warning">Lokales Speichern aktiv. Keine Cookies von Drittanbietern.</div>
-
   <div id="hud">
     <div id="topbar">
-      <div id="clock">20:00</div>
-      <div>|</div>
+      <div id="clock">20:00</div><div>|</div>
       <div id="batteryBar"><div id="batteryFill"></div></div>
-      <div class="muted small">F: Lampe</div>
-      <div>|</div>
-      <div id="objective">Ziel: Melde dich am <b>Computer</b> im Großraumbüro an.</div>
+      <div class="muted small">F Lampe</div><div>|</div>
+      <div id="objective">Ziel: Melde dich am Computer an.</div>
     </div>
     <div id="status">
       <div><b>Ort:</b> <span id="loc">Lobby</span></div>
       <div><b>Hinweis:</b> <span id="tip">Finde die Mitarbeiterkarte.</span></div>
-      <div class="small muted">E: Interagieren · I: Inventar · P/L: Speichern/Laden</div>
+      <div class="small muted">E Interagieren · I Inventar · P/L Speichern/Laden</div>
     </div>
     <div id="crosshair"></div>
     <div id="hint">E – Interagieren</div>
     <div id="log"></div>
   </div>
 
-  <div id="inventory">
-    <div class="panel">
-      <h3>Inventar</h3>
-      <div id="invTags"></div>
-      <div class="small muted">Batterien werden automatisch verwendet, wenn die Taschenlampe fast leer ist.</div>
-      <button class="btn" id="closeInv">Schließen (I)</button>
-    </div>
-  </div>
-
-  <div id="workUI">
-    <div class="panel">
-      <h3>Arbeitsaufgabe: E-Mails triagieren</h3>
-      <div class="bar" style="margin:10px 0 8px;"><div class="fill" id="workFill"></div></div>
-      <div class="small muted">Bleib am Computer, bis der Balken voll ist. Geräusche ignorieren.</div>
-      <button class="btn" id="cancelWork">Abbrechen</button>
-    </div>
-  </div>
-
   <script type="module">
-    /* ===== Imports ===== */
     import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
     import { PointerLockControls } from 'https://unpkg.com/three@0.160.0/examples/jsm/controls/PointerLockControls.js';
 
-    /* ===== Renderer/Scene/Camera ===== */
-    const renderer = new THREE.WebGLRenderer({ antialias:true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    // DOM
+    const overlay=document.getElementById('overlay');
+    const startBtn=document.getElementById('startBtn');
+    const hud=document.getElementById('hud');
+    const clockEl=document.getElementById('clock');
+    const locEl=document.getElementById('loc');
+    const tipEl=document.getElementById('tip');
+    const objectiveEl=document.getElementById('objective');
+    const batteryFill=document.getElementById('batteryFill');
+    const hintEl=document.getElementById('hint');
+    const logEl=document.getElementById('log');
+
+    function log(msg){ const d=document.createElement('div'); d.textContent=msg; logEl.prepend(d); }
+
+    // Three.js Grundsetup
+    const renderer=new THREE.WebGLRenderer({antialias:true});
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.setPixelRatio(Math.min(devicePixelRatio,2));
     document.body.appendChild(renderer.domElement);
 
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x000000);
+    const scene=new THREE.Scene(); scene.background=new THREE.Color(0x000000);
+    const camera=new THREE.PerspectiveCamera(75, innerWidth/innerHeight, .1, 200);
+    camera.position.set(0,1.7,6);
+    const controls=new PointerLockControls(camera, renderer.domElement);
 
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 200);
-    camera.position.set(0, 1.7, 6);
+    scene.add(new THREE.HemisphereLight(0x222233,0x000000,.2));
+    scene.add(new THREE.AmbientLight(0x111122,.15));
 
-    const controls = new PointerLockControls(camera, renderer.domElement);
+    // Lampe
+    let flashOn=false, battery=100, batteryLow=false;
+    const flashlight=new THREE.SpotLight(0xffffff,0.0,20,Math.PI/8,.5,1.0);
+    flashlight.position.set(0,0,0); flashlight.target.position.set(0,0,-1);
+    camera.add(flashlight); camera.add(flashlight.target); scene.add(camera);
 
-    /* ===== Lighting ===== */
-    const hemi = new THREE.HemisphereLight(0x222233, 0x000000, 0.2);
-    scene.add(hemi);
-    const ambient = new THREE.AmbientLight(0x111122, 0.15);
-    scene.add(ambient);
+    // Materialien
+    const matWall=new THREE.MeshStandardMaterial({color:0x222428,roughness:.9});
+    const matFloor=new THREE.MeshStandardMaterial({color:0x1a1b1e,roughness:1});
+    const matDoor=new THREE.MeshStandardMaterial({color:0x111111,roughness:.6});
+    const matInteract=new THREE.MeshStandardMaterial({color:0x35577a,emissive:0x0d2333,emissiveIntensity:.2});
+    const matPickup=new THREE.MeshStandardMaterial({color:0x80ffb3,emissive:0x335544,emissiveIntensity:.5});
 
-    // Player flashlight
-    const flashlight = new THREE.SpotLight(0xffffff, 0.0, 20, Math.PI/8, 0.5, 1.0);
-    flashlight.position.set(0, 0, 0);
-    flashlight.target.position.set(0, 0, -1);
-    camera.add(flashlight);
-    camera.add(flashlight.target);
-    scene.add(camera);
-
-    /* ===== Materials ===== */
-    const matWall = new THREE.MeshStandardMaterial({ color:0x222428, roughness:0.9, metalness:0.0 });
-    const matFloor = new THREE.MeshStandardMaterial({ color:0x1a1b1e, roughness:1.0, metalness:0.0 });
-    const matAccent = new THREE.MeshStandardMaterial({ color:0x2a4b6a, roughness:0.8 });
-    const matDoor = new THREE.MeshStandardMaterial({ color:0x111111, roughness:0.6 });
-    const matInteract = new THREE.MeshStandardMaterial({ color:0x35577a, emissive:0x0d2333, emissiveIntensity:0.2 });
-    const matPickup = new THREE.MeshStandardMaterial({ color:0x80ffb3, emissive:0x335544, emissiveIntensity:0.5 });
-
-    /* ===== UI elements ===== */
-    const overlay = document.getElementById('overlay');
-    const startBtn = document.getElementById('startBtn');
-    const hud = document.getElementById('hud');
-    const clockEl = document.getElementById('clock');
-    const locEl = document.getElementById('loc');
-    const tipEl = document.getElementById('tip');
-    const objectiveEl = document.getElementById('objective');
-    const batteryFill = document.getElementById('batteryFill');
-    const hintEl = document.getElementById('hint');
-    const logEl = document.getElementById('log');
-    const inventoryUI = document.getElementById('inventory');
-    const invTags = document.getElementById('invTags');
-    const closeInv = document.getElementById('closeInv');
-    const workUI = document.getElementById('workUI');
-    const workFill = document.getElementById('workFill');
-    const cancelWork = document.getElementById('cancelWork');
-    const warning = document.getElementById('warning');
-
-    function log(msg){
-      const div = document.createElement('div');
-      div.textContent = msg;
-      logEl.prepend(div);
-    }
-
-    /* ===== Audio (WebAudio) ===== */
-    let audioCtx;
-    function ensureAudio(){
-      if(!audioCtx){
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      }
-    }
-    function beep(freq=440, time=0.15, type='sine', gain=0.03){
-      if(!audioCtx) return;
-      const osc = audioCtx.createOscillator();
-      const g = audioCtx.createGain();
-      osc.type = type; osc.frequency.value = freq;
-      g.gain.value = gain;
-      osc.connect(g).connect(audioCtx.destination);
-      osc.start();
-      setTimeout(()=>{ osc.stop(); }, time*1000);
-    }
-    function hiss(duration=2, vol=0.02){
-      if(!audioCtx) return;
-      const bufferSize = audioCtx.sampleRate * duration;
-      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-      const data = buffer.getChannelData(0);
-      for(let i=0;i<bufferSize;i++){ data[i] = (Math.random()*2-1) * 0.5; }
-      const src = audioCtx.createBufferSource(); src.buffer = buffer;
-      const g = audioCtx.createGain(); g.gain.value = vol;
-      src.connect(g).connect(audioCtx.destination); src.start();
-    }
-
-    /* ===== World helpers ===== */
-    const colliders = [];
-    const interactables = [];
-    const doors = [];
-    const pickups = [];
-
-    function addCollider(mesh){
-      mesh.updateMatrixWorld(true);
-      const box = new THREE.Box3().setFromObject(mesh);
-      colliders.push(box);
-      return box;
-    }
-    function box(x,y,z, sx,sy,sz, mat){
-      const m = new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz), mat||matWall);
-      m.position.set(x,y,z);
-      m.castShadow = false; m.receiveShadow = true;
-      scene.add(m);
-      return m;
-    }
-    function addWallRect(cx, cz, w, h, thickness=0.25, height=3){
-      const y = height/2;
-      addCollider( box(cx, y, cz - h/2, w, height, thickness) );
-      addCollider( box(cx, y, cz + h/2, w, height, thickness) );
-      addCollider( box(cx - w/2, y, cz, thickness, height, h) );
-      addCollider( box(cx + w/2, y, cz, thickness, height, h) );
-    }
-    function addFloorRect(cx, cz, w, h){
-      const floor = new THREE.Mesh(new THREE.BoxGeometry(w, 0.1, h), matFloor);
-      floor.position.set(cx, 0, cz);
-      floor.receiveShadow = true;
-      scene.add(floor);
-    }
-    function addDoorway(cx, cz, width=1.2, height=2.2, thickness=0.2, dir='N', locked=false, key){
-      const pivot = new THREE.Object3D();
-      pivot.position.set(cx, 0, cz);
-      scene.add(pivot);
-      const door = new THREE.Mesh(new THREE.BoxGeometry(thickness, height, width), matDoor);
-      const y = height/2; door.position.y = y;
-      if(dir==='N' || dir==='S'){
-        door.rotation.y = 0;
-      } else {
-        door.rotation.y = Math.PI/2;
-      }
-      pivot.add(door);
-      const entry = { pivot, door, open:false, locked, key: key||null, collider: null };
-      const temp = new THREE.Box3().setFromObject(door);
-      entry.collider = temp; colliders.push(temp);
-      door.userData = { type:'door', ref: entry };
-      interactables.push(door);
-      doors.push(entry);
+    // Welt-Helfer
+    const colliders=[], interactables=[], doors=[], pickups=[], worldLights=[], locZones=[];
+    function addCollider(m){ m.updateMatrixWorld(true); const b=new THREE.Box3().setFromObject(m); colliders.push(b); return b; }
+    function box(x,y,z,sx,sy,sz,mat){ const m=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),mat||matWall); m.position.set(x,y,z); m.receiveShadow=true; scene.add(m); return m; }
+    function addWallRect(cx,cz,w,h,t=.25,hg=3){ const y=hg/2; addCollider(box(cx,y,cz-h/2,w,hg,t)); addCollider(box(cx,y,cz+h/2,w,hg,t)); addCollider(box(cx-w/2,y,cz,t,hg,h)); addCollider(box(cx+w/2,y,cz,t,hg,h)); }
+    function addFloorRect(cx,cz,w,h){ const f=new THREE.Mesh(new THREE.BoxGeometry(w,.1,h),matFloor); f.position.set(cx,0,cz); f.receiveShadow=true; scene.add(f); }
+    function addDoorway(cx,cz,width=1.2,height=2.2,th=.2,dir='N',locked=false,key){
+      const pivot=new THREE.Object3D(); pivot.position.set(cx,0,cz); scene.add(pivot);
+      const door=new THREE.Mesh(new THREE.BoxGeometry(th,height,width),matDoor); door.position.y=height/2; door.rotation.y=(dir==='N'||dir==='S')?0:Math.PI/2; pivot.add(door);
+      const entry={pivot,door,open:false,locked,key:key||null,collider:new THREE.Box3().setFromObject(door)};
+      colliders.push(entry.collider);
+      door.userData={type:'door',ref:entry}; interactables.push(door); doors.push(entry);
       return entry;
     }
-    function updateDoorCollider(entry){
-      if(entry.open){ return; }
-      entry.door.updateMatrixWorld(true);
-      entry.collider.setFromObject(entry.door);
-    }
+    function updateDoorCollider(e){ if(e.open) return; e.door.updateMatrixWorld(true); e.collider.setFromObject(e.door); }
 
-    /* ===== Map (defaults) ===== */
+    // Karte
     function buildWorld(){
-      addFloorRect(0, 0, 60, 60);
-      addWallRect(0, 0, 56, 56);
+      addFloorRect(0,0,60,60); addWallRect(0,0,56,56);
+      addFloorRect(0,0,10,8); addWallRect(0,0,10,8);           // Lobby
+      addFloorRect(0,-7,20,4); addWallRect(0,-7,20,4);         // Flur
+      addFloorRect(-12,-7,10,8); addWallRect(-12,-7,10,8);     // Büro
+      addFloorRect(-22,-7,8,6); addWallRect(-22,-7,8,6);       // Server
+      addFloorRect(12,-7,10,8); addWallRect(12,-7,10,8);       // Archiv
+      addFloorRect(0,7,8,6); addWallRect(0,7,8,6);             // Toiletten
+      addFloorRect(0,-18,12,8); addWallRect(0,-18,12,8);       // Parkhaus
 
-      addFloorRect(0, 0, 10, 8);      // Lobby
-      addFloorRect(0, -7, 20, 4);     // Corridor
-      addFloorRect(-12, -7, 10, 8);   // Office
-      addFloorRect(-22, -7, 8, 6);    // Server
-      addFloorRect(12, -7, 10, 8);    // Archive
-      addFloorRect(0, 7, 8, 6);       // Toilets
-      addFloorRect(0, -18, 12, 8);    // Parking
-      addFloorRect(0, -24, 10, 8);    // Basement
+      addDoorway(0,-3,1.4,2.2,.18,'S',false);
+      addDoorway(-7,-7,1.4,2.2,.18,'E',false);
+      addDoorway(-17,-7,1.4,2.2,.18,'E',true,'srv_key');
+      addDoorway(7,-7,1.4,2.2,.18,'W',true,'arc_key');
+      addDoorway(0,3,1.2,2.1,.18,'N',false);
+      addDoorway(0,-11,1.6,2.2,.18,'S',true,'basement_key');
+      addDoorway(0,-20,1.6,2.2,.18,'S',true,'gate_card');
 
-      addWallRect(0, 0, 10, 8);
-      addWallRect(0, -7, 20, 4);
-      addWallRect(-12, -7, 10, 8);
-      addWallRect(-22, -7, 8, 6);
-      addWallRect(12, -7, 10, 8);
-      addWallRect(0, 7, 8, 6);
-      addWallRect(0, -18, 12, 8);
-      addWallRect(0, -24, 10, 8);
+      const pc=box(-12,1.1,-5.2,.6,.4,.4,matInteract); pc.userData={type:'computer',id:'office_pc'}; interactables.push(pc);
+      function addPickup(x,y,z,item,label){ const m=new THREE.Mesh(new THREE.BoxGeometry(.2,.2,.2),matPickup); m.position.set(x,y,z); m.userData={type:'pickup',item,label}; scene.add(m); pickups.push(m); interactables.push(m); }
+      addPickup(-11.5,.9,-5.0,'arc_key','Archiv-Schlüssel');
+      addPickup(-12.8,.9,-6.2,'battery','Batterie');
 
-      addDoorway(0, -3, 1.4, 2.2, 0.18, 'S', false);
-      addDoorway(-7, -7, 1.4, 2.2, 0.18, 'E', false);
-      addDoorway(-17, -7, 1.4, 2.2, 0.18, 'E', true, 'srv_key');
-      addDoorway(7, -7, 1.4, 2.2, 0.18, 'W', true, 'arc_key');
-      addDoorway(0, 3, 1.2, 2.1, 0.18, 'N', false);
-      addDoorway(0, -11, 1.6, 2.2, 0.18, 'S', true, 'basement_key');
-      addDoorway(0, -20, 1.6, 2.2, 0.18, 'S', true, 'gate_card');
-      addDoorway(2, -9, 1.2, 2.0, 0.18, 'S', true, 'basement_key');
+      const L1=new THREE.PointLight(0xbfd9ff,1.2,12,1.3); L1.position.set(0,2.6,-7);
+      const L2=new THREE.PointLight(0xbfd9ff,1.1,10,1.2); L2.position.set(-12,2.6,-7);
+      scene.add(L1,L2); worldLights.push(L1,L2);
 
-      const lobbyDesk = box(-2, 0.75, 1, 2.4, 1.5, 0.9, matAccent);
-      for(let i=0;i<3;i++){
-        box(-10 - i*1.6, 0.75, -5.5, 1.2, 1.5, 0.8, matAccent);
-      }
-      const pc = box(-12, 1.1, -5.2, 0.6, 0.4, 0.4, matInteract);
-      pc.userData = { type:'computer', id:'office_pc' };
-      interactables.push(pc);
-
-      for(let i=0;i<2;i++){
-        const rack = box(-22, 1.5, -6 + i*2, 1.0, 3.0, 0.8, matInteract);
-        rack.userData = { type:'server', id:'srv_'+i };
-        interactables.push(rack);
-      }
-      for(let i=0;i<3;i++){
-        box(12, 1.25, -9 + i*2, 2.0, 2.5, 0.5, matWall);
-      }
-
-      const mirror = new THREE.Mesh(new THREE.BoxGeometry(1.6,1.0,0.05), new THREE.MeshStandardMaterial({ color:0x223344, metalness:0.8, roughness:0.2 }));
-      mirror.position.set(0, 1.6, 5.2);
-      scene.add(mirror);
-      mirror.userData = { type:'mirror', id:'toilet_mirror' };
-      interactables.push(mirror);
-
-      function addPickup(x,y,z, item, label){
-        const m = new THREE.Mesh(new THREE.BoxGeometry(0.2,0.2,0.2), matPickup);
-        m.position.set(x,y,z);
-        m.userData = { type:'pickup', item, label };
-        scene.add(m); pickups.push(m); interactables.push(m);
-      }
-      addPickup(-11.5, 0.9, -5.0, 'arc_key', 'Archiv-Schlüssel');
-      addPickup(-20.5, 0.9, -7.5, 'srv_key', 'Serverraum-Schlüssel');
-      addPickup(0.5, 0.9, -9.0, 'basement_key', 'Kellerschlüssel');
-      addPickup(0.2, 0.9, -18.5, 'gate_card', 'Parkhauskarte');
-      addPickup(-12.8, 0.9, -6.2, 'battery', 'Batterie');
-      addPickup(12.2, 0.9, -7.8, 'battery', 'Batterie');
-
-      const corridorLight = new THREE.PointLight(0xbfd9ff, 1.4, 12, 1.4); corridorLight.position.set(0,2.6,-7); scene.add(corridorLight);
-      const officeLight = new THREE.PointLight(0xbfd9ff, 1.2, 10, 1.2); officeLight.position.set(-12,2.6,-7); scene.add(officeLight);
-      const lobbyLight = new THREE.PointLight(0xbfd9ff, 0.9, 10, 1.2); lobbyLight.position.set(0,2.6,0); scene.add(lobbyLight);
-      const toiletLight = new THREE.PointLight(0x9fd0ff, 0.8, 8, 1.2); toiletLight.position.set(0,2.5,7); scene.add(toiletLight);
-      const archiveLight = new THREE.PointLight(0xbfd9ff, 1.0, 10, 1.2); archiveLight.position.set(12,2.6,-7); scene.add(archiveLight);
-      const serverLight = new THREE.PointLight(0x8bb0ff, 0.7, 10, 1.3); serverLight.position.set(-22,2.6,-7); scene.add(serverLight);
-      worldLights.push(corridorLight, officeLight, lobbyLight, toiletLight, archiveLight, serverLight);
-
-      locZones.push({name:'Lobby', cx:0, cz:0, w:10, h:8});
-      locZones.push({name:'Flur', cx:0, cz:-7, w:20, h:4});
-      locZones.push({name:'Großraumbüro', cx:-12, cz:-7, w:10, h:8});
-      locZones.push({name:'Serverraum', cx:-22, cz:-7, w:8, h:6});
-      locZones.push({name:'Archiv', cx:12, cz:-7, w:10, h:8});
-      locZones.push({name:'Toiletten', cx:0, cz:7, w:8, h:6});
-      locZones.push({name:'Parkhaus', cx:0, cz:-18, w:12, h:8});
-      locZones.push({name:'Keller', cx:0, cz:-24, w:10, h:8});
-
-      const phone = box(-1.2, 1.0, 0.8, 0.3, 0.1, 0.3, matInteract);
-      phone.userData = { type:'phone', id:'lobby_phone' };
-      interactables.push(phone);
+      locZones.push({name:'Lobby',cx:0,cz:0,w:10,h:8},{name:'Flur',cx:0,cz:-7,w:20,h:4},{name:'Großraumbüro',cx:-12,cz:-7,w:10,h:8});
     }
+    buildWorld();
 
-    /* ===== Player / Input ===== */
-    const keys = { w:false, a:false, s:false, d:false, shift:false };
-    let flashOn = false;
-    let battery = 100;
-    let batteryLowWarned = false;
+    // Input/Inventory
+    const keys={w:false,a:false,s:false,d:false,shift:false};
+    const inventory=new Set();
+    function refreshInventory(){} // placeholder for UI
 
-    document.addEventListener('keydown', (e)=>{
-      if(e.code==='KeyW') keys.w=true;
-      if(e.code==='KeyA') keys.a=true;
-      if(e.code==='KeyS') keys.s=true;
-      if(e.code==='KeyD') keys.d=true;
-      if(e.code==='ShiftLeft' || e.code==='ShiftRight') keys.shift=true;
-      if(e.code==='KeyF'){ toggleFlashlight(); }
-      if(e.code==='KeyI'){ toggleInventory(); }
-      if(e.code==='KeyP'){ saveGame(); }
-      if(e.code==='KeyL'){ loadGame(); }
-      if(e.code==='KeyM'){ log('Tipp: Manche Türen brauchen Schlüssel.'); }
+    addEventListener('keydown',e=>{
+      if(e.code==='KeyW')keys.w=true; if(e.code==='KeyA')keys.a=true; if(e.code==='KeyS')keys.s=true; if(e.code==='KeyD')keys.d=true;
+      if(e.code==='ShiftLeft'||e.code==='ShiftRight')keys.shift=true;
+      if(e.code==='KeyF'){ flashOn=!flashOn; flashlight.intensity=flashOn?2.0:0.0; }
       if(e.code==='KeyE'){ tryInteract(); }
     });
-    document.addEventListener('keyup', (e)=>{
-      if(e.code==='KeyW') keys.w=false;
-      if(e.code==='KeyA') keys.a=false;
-      if(e.code==='KeyS') keys.s=false;
-      if(e.code==='KeyD') keys.d=false;
-      if(e.code==='ShiftLeft' || e.code==='ShiftRight') keys.shift=false;
+    addEventListener('keyup',e=>{
+      if(e.code==='KeyW')keys.w=false; if(e.code==='KeyA')keys.a=false; if(e.code==='KeyS')keys.s=false; if(e.code==='KeyD')keys.d=false;
+      if(e.code==='ShiftLeft'||e.code==='ShiftRight')keys.shift=false;
     });
 
-    function toggleFlashlight(){
-      flashOn = !flashOn;
-      flashlight.intensity = flashOn ? 2.0 : 0.0;
-      if(flashOn){
-        ensureAudio(); beep(420, 0.05, 'triangle', 0.02);
-      }
-    }
-    function toggleInventory(){
-      const open = inventoryUI.style.display === 'flex';
-      inventoryUI.style.display = open ? 'none' : 'flex';
-    }
-    closeInv.addEventListener('click', ()=> toggleInventory());
-
-    /* ===== Inventory & Tasks ===== */
-    const inventory = new Set();
-    const flags = { emailTask:false, backupTask:false, ghostSeen:false };
-
-    function refreshInventoryUI(){
-      invTags.innerHTML='';
-      if(inventory.size===0){ invTags.innerHTML = '<div class="muted small">(leer)</div>'; return; }
-      inventory.forEach(it=>{
-        const span = document.createElement('span'); span.className='tag'; span.textContent = it; invTags.appendChild(span);
-      });
-    }
-    function hasItem(key){ return inventory.has(key); }
-    function grantItem(it, label){
-      if(!inventory.has(it)){
-        inventory.add(it); refreshInventoryUI();
-        log(`+ ${label||it} erhalten`);
-      }
-    }
-
-    /* ===== Interaction via Raycast ===== */
-    const raycaster = new THREE.Raycaster();
+    // Interaktion
+    const raycaster=new THREE.Raycaster();
     function tryInteract(){
-      raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
-      const hits = raycaster.intersectObjects(interactables, false);
-      if(hits.length>0){
-        const hit = hits[0]; if(hit.distance>2.2) return;
-        const ud = hit.object.userData || {};
-        switch(ud.type){
-          case 'door': onDoorInteract(ud.ref); break;
-          case 'pickup': onPickup(hit.object); break;
-          case 'computer': onComputer(); break;
-          case 'server': onServer(hit.object); break;
-          case 'phone': onPhone(); break;
-          case 'mirror': onMirror(); break;
-        }
-      }
+      raycaster.setFromCamera(new THREE.Vector2(0,0),camera);
+      const hits=raycaster.intersectObjects(interactables,false);
+      if(!hits.length||hits[0].distance>2.2) return;
+      const ud=hits[0].object.userData||{};
+      if(ud.type==='door'){ onDoor(ud.ref); }
+      else if(ud.type==='pickup'){ inventory.add(ud.item); scene.remove(hits[0].object); log(`+ ${ud.label||ud.item}`); refreshInventory(); }
+      else if(ud.type==='computer'){ log('E-Mails öffnen … bleib in der Nähe.'); }
     }
-    function onDoorInteract(entry){
-      if(entry.open){
-        entry.open=false; entry.pivot.rotation.y = 0;
-        if(entry.collider && !colliders.includes(entry.collider)) colliders.push(entry.collider);
-        updateDoorCollider(entry);
-        beep(200,0.08,'sawtooth',0.02);
-        return;
-      }
-      if(entry.locked && entry.key && !hasItem(entry.key)){
-        tipEl.textContent = 'Tür verschlossen. Benötigt: '+entry.key;
-        beep(140,0.08,'square',0.03);
-        return;
-      }
-      entry.locked = false;
-      entry.open = true;
-      entry.pivot.rotation.y = -Math.PI/2;
-      const idx = colliders.indexOf(entry.collider); if(idx>=0) colliders.splice(idx,1);
-      beep(600,0.06,'triangle',0.02);
-    }
-    function onPickup(obj){
-      const { item, label } = obj.userData;
-      if(item==='battery'){
-        battery = Math.min(100, battery + 35);
-      } else {
-        grantItem(item, label);
-      }
-      scene.remove(obj);
-      const iIdx = interactables.indexOf(obj); if(iIdx>=0) interactables.splice(iIdx,1);
-      const pIdx = pickups.indexOf(obj); if(pIdx>=0) pickups.splice(pIdx,1);
+    function onDoor(entry){
+      if(entry.open){ entry.open=false; entry.pivot.rotation.y=0; if(entry.collider&&!colliders.includes(entry.collider)) colliders.push(entry.collider); updateDoorCollider(entry); return; }
+      if(entry.locked && entry.key && !inventory.has(entry.key)){ tipEl.textContent='Verschlossen. Benötigt: '+entry.key; return; }
+      entry.locked=false; entry.open=true; entry.pivot.rotation.y=-Math.PI/2;
+      const i=colliders.indexOf(entry.collider); if(i>=0) colliders.splice(i,1);
     }
 
-    // Work task UI (emails)
-    let working = false; let workStart=0; let workDuration=9000;
-    function onComputer(){
-      if(flags.emailTask){ log('Mails bereits erledigt.'); return; }
-      workUI.style.display='flex'; working=true; workStart=performance.now(); workDuration=9000;
-      tipEl.textContent = 'Bleib am PC, bis die Aufgabe fertig ist.';
-    }
-    cancelWork.addEventListener('click', ()=>{ working=false; workUI.style.display='none'; });
-
-    function onServer(){ log('Server überprüft. Summen wird lauter …'); ensureAudio(); hiss(1.5, 0.02); }
-    function onPhone(){ log('Niemand am Apparat. Nur Atmen.'); ensureAudio(); beep(880,0.08,'sine',0.02); beep(660,0.08,'sine',0.02); }
-    function onMirror(){ log('Dein Spiegelbild blinzelt verzögert.'); ensureAudio(); hiss(1.2, 0.03); }
-
-    /* ===== Movement & Collision ===== */
-    const speedWalk = 2.2; const speedRun = 4.0;
+    // Bewegung/Kollision
     function collidesAt(pos){
       for(const b of colliders){
-        if(pos.y < b.max.y && pos.y > b.min.y){
-          if(pos.x > b.min.x-0.3 && pos.x < b.max.x+0.3 && pos.z > b.min.z-0.3 && pos.z < b.max.z+0.3){
-            return true;
-          }
+        if(pos.y<b.max.y && pos.y>b.min.y){
+          if(pos.x>b.min.x-.3 && pos.x<b.max.x+.3 && pos.z>b.min.z-.3 && pos.z<b.max.z+.3) return true;
         }
-      }
-      return false;
+      } return false;
     }
-    function movePlayer(delta){
-      const dir = new THREE.Vector3();
-      const forward = new THREE.Vector3();
-      camera.getWorldDirection(forward); forward.y=0; forward.normalize();
-      const right = new THREE.Vector3().crossVectors(forward, new THREE.Vector3(0,1,0)).normalize().multiplyScalar(-1);
-      const spd = (keys.shift? speedRun : speedWalk);
-      if(keys.w) dir.add(forward);
-      if(keys.s) dir.sub(forward);
-      if(keys.a) dir.sub(right);
-      if(keys.d) dir.add(right);
-      if(dir.lengthSq()>0){ dir.normalize().multiplyScalar(spd*delta); }
-
-      const p = camera.position.clone();
-      const tryX = p.clone().add(new THREE.Vector3(dir.x, 0, 0));
-      if(!collidesAt(tryX)) camera.position.x = tryX.x;
-      const tryZ = camera.position.clone().add(new THREE.Vector3(0, 0, dir.z));
-      if(!collidesAt(tryZ)) camera.position.z = tryZ.z;
-      camera.position.y = 1.7;
+    const speedWalk=2.2, speedRun=4.0;
+    function move(delta){
+      const f=new THREE.Vector3(), r=new THREE.Vector3(), dir=new THREE.Vector3();
+      camera.getWorldDirection(f); f.y=0; f.normalize();
+      r.crossVectors(f,new THREE.Vector3(0,1,0)).normalize().multiplyScalar(-1);
+      const sp=keys.shift?speedRun:speedWalk;
+      if(keys.w)dir.add(f); if(keys.s)dir.sub(f); if(keys.a)dir.sub(r); if(keys.d)dir.add(r);
+      if(dir.lengthSq()>0) dir.normalize().multiplyScalar(sp*delta);
+      const p=camera.position.clone();
+      const tryX=p.clone().add(new THREE.Vector3(dir.x,0,0)); if(!collidesAt(tryX)) camera.position.x=tryX.x;
+      const tryZ=camera.position.clone().add(new THREE.Vector3(0,0,dir.z)); if(!collidesAt(tryZ)) camera.position.z=tryZ.z;
+      camera.position.y=1.7;
     }
 
-    /* ===== Game Time & Events ===== */
-    const startTime = { h:20, m:0 };
-    let gameMinutes = 0;
-    const minutesToSurvive = 5*60;
-    const secPerGameMinute = 10;
+    // Game-Time/Location
+    const startTime={h:20,m:0}; let gameMinutes=0, acc=0; const secPerGameMinute=10;
+    function fmtTime(){ const t=startTime.h*60+startTime.m+gameMinutes; const h=Math.floor(t/60)%24, m=t%60; return (h<10?'0'+h:h)+':'+(m<10?'0'+m:m); }
+    function updateLocationHUD(){ const x=camera.position.x,z=camera.position.z; for(const zc of locZones){ if(Math.abs(x-zc.cx)<=zc.w/2 && Math.abs(z-zc.cz)<=zc.h/2){ locEl.textContent=zc.name; return; } } }
 
-    function fmtTime(){
-      const total = startTime.h*60 + startTime.m + gameMinutes;
-      let h = Math.floor(total/60)%24; let m = total%60;
-      return (h<10?'0'+h:h)+":"+(m<10?'0'+m:m);
-    }
-
-    const worldLights = [];
-    const locZones = [];
-    function updateLocationHUD(){
-      const x = camera.position.x, z = camera.position.z;
-      for(const zc of locZones){
-        if(Math.abs(x - zc.cx) <= zc.w/2 && Math.abs(z - zc.cz) <= zc.h/2){ locEl.textContent = zc.name; return; }
-      }
-    }
-
-    const events = [];
-    function scheduleEvent(atMin, fn, id){ events.push({ at: atMin, fn, id, fired:false }); }
-    function initEvents(){
-      scheduleEvent(160, ()=>{
-        log('Das Licht im Bad flackert …'); ensureAudio(); hiss(2, 0.03);
-        const L = worldLights.find(l=>Math.abs(l.position.z-7)<0.5);
-        if(L){ let n=0; const int = setInterval(()=>{ L.intensity = L.intensity<0.2?0.9:0.1; n++; if(n>8){ clearInterval(int); L.intensity=0.8; } }, 180); }
-      }, 'toilet_flicker');
-
-      scheduleEvent(210, ()=>{
-        log('Das Telefon in der Lobby klingelt …'); ensureAudio();
-        let n=0; const int = setInterval(()=>{ beep(1000,0.1,'square',0.03); n++; if(n>8) clearInterval(int); }, 450);
-      }, 'phone_ring');
-
-      scheduleEvent(240, ()=>{
-        spawnShadowGlimpse(0,-7);
-        log('Etwas huscht im Flur vorbei.'); ensureAudio(); hiss(1.2, 0.03);
-      }, 'corridor_shadow');
-
-      scheduleEvent(270, ()=>{
-        log('Eine Tür rüttelt heftig irgendwo …'); ensureAudio();
-        for(const d of doors){ if(Math.random()<0.3 && !d.open){ d.pivot.rotation.y = 0.05; setTimeout(()=>{ d.pivot.rotation.y = 0; }, 800); } }
-      }, 'door_rattle');
-
-      scheduleEvent(300, ()=>{ endGame('survive'); }, 'end_survive');
-    }
-
-    function spawnShadowGlimpse(cx, cz){
-      const s = new THREE.Mesh(new THREE.PlaneGeometry(0.8,1.8), new THREE.MeshBasicMaterial({ color:0x000000 }));
-      s.position.set(cx + (Math.random()*2-1)*2, 0.9, cz + (Math.random()*2-1)*2);
-      s.rotation.y = Math.random()*Math.PI*2;
-      scene.add(s);
-      setTimeout(()=>{ scene.remove(s); }, 800);
-    }
-
-    /* ===== Endings ===== */
-    let ended = false;
-    function endGame(type){
-      if(ended) return; ended = true;
-      ensureAudio(); beep(220,0.2,'sine',0.02);
-      controls.unlock();
-      overlay.style.display='flex';
-      overlay.querySelector('.panel').innerHTML = `
-        <h1>${type==='survive'?'1:00 – Überlebt':'Flucht'}</h1>
-        <p>${type==='survive'?'Du hast durchgehalten. Etwas hat dich beobachtet.':'Du hast es nach draußen geschafft – aber etwas folgt dir in die Träume.'}</p>
-        <button class="btn" id="restartBtn">Nochmal</button>
-      `;
-      document.getElementById('restartBtn').addEventListener('click', ()=>{ location.reload(); });
-    }
-    function tryEscapeCheck(){
-      const timeStr = fmtTime();
-      const h = parseInt(timeStr.slice(0,2)); const m = parseInt(timeStr.slice(3));
-      const before0045 = (h===0 && m<45) || h===20 || h===21 || h===22 || h===23;
-      if(before0045){ endGame('escape'); }
-      else { log('Zu spät … das System lässt dich nicht gehen.'); }
-    }
-
-    /* ===== Save/Load ===== */
-    function saveGame(){
-      const data = {
-        pos: { x: camera.position.x, y: camera.position.y, z: camera.position.z },
-        inv: Array.from(inventory),
-        flags, gameMinutes, battery
-      };
-      localStorage.setItem('overtime_save', JSON.stringify(data));
-      warning.style.display='block'; setTimeout(()=>warning.style.display='none', 1800);
-      log('Spielstand gespeichert.');
-    }
-    function loadGame(){
-      const raw = localStorage.getItem('overtime_save');
-      if(!raw){ log('Kein Speicherstand gefunden.'); return; }
-      const data = JSON.parse(raw);
-      camera.position.set(data.pos.x, data.pos.y, data.pos.z);
-      inventory.clear(); (data.inv||[]).forEach(i=>inventory.add(i)); refreshInventoryUI();
-      Object.assign(flags, data.flags||{});
-      gameMinutes = data.gameMinutes||0; battery = data.battery ?? 100;
-      log('Spielstand geladen.');
-    }
-
-    /* ===== Game Loop ===== */
-    const clock = new THREE.Clock();
-    let accTime = 0;
-    function update(delta){
-      if(controls.isLocked){
-        movePlayer(delta);
-        updateLocationHUD();
-        if(flashOn){ battery -= delta*0.9; if(battery<0) battery=0; flashlight.intensity = battery>2? 2.0: 0.0; }
-        if(!batteryLowWarned && battery<20){ tipEl.textContent = 'Batterie fast leer.'; batteryLowWarned=true; log('Batterie fast leer.'); }
-        if(battery<5 && inventory.has('battery')){ inventory.delete('battery'); battery = Math.min(100, battery+50); refreshInventoryUI(); log('Automatisch: Batterie eingesetzt.'); }
-
-        if(working){
-          const pcPos = new THREE.Vector3(-12, 1.1, -5.2);
-          if(camera.position.distanceTo(pcPos) < 2.5){
-            const p = Math.min(1, (performance.now()-workStart)/workDuration); workFill.style.width = (p*100).toFixed(1)+'%';
-            if(p>=1){ working=false; workUI.style.display='none'; flags.emailTask=true; log('E-Mail-Aufgabe erledigt.'); objectiveEl.textContent='Ziel: Sichere den Server (Schlüssel finden)'; }
-          } else {
-            tipEl.textContent = 'Du bist vom Computer weggegangen …';
-          }
-        }
-
-        accTime += delta;
-        if(accTime >= secPerGameMinute){ accTime -= secPerGameMinute; gameMinutes++; clockEl.textContent = fmtTime(); }
-
-        for(const ev of events){ if(!ev.fired && gameMinutes >= ev.at){ ev.fired=true; ev.fn(); } }
-
-        doors.forEach(updateDoorCollider);
-
-        if(camera.position.z < -22){ tryEscapeCheck(); }
-      }
-      batteryFill.style.width = Math.max(0, Math.min(100, battery)).toFixed(0)+'%';
-    }
+    // Loop
+    const clock=new THREE.Clock();
     function animate(){
       requestAnimationFrame(animate);
-      const delta = Math.min(0.033, clock.getDelta());
-      update(delta);
-      renderer.render(scene, camera);
+      const d=Math.min(.033, clock.getDelta());
+      if(controls.isLocked){
+        move(d);
+        if(flashOn){ battery-=d*.9; if(battery<0)battery=0; flashlight.intensity=battery>2?2.0:0.0; if(!batteryLow && battery<20){ batteryLow=true; tipEl.textContent='Batterie fast leer.'; } }
+        acc+=d; if(acc>=secPerGameMinute){ acc-=secPerGameMinute; gameMinutes++; clockEl.textContent=fmtTime(); }
+        updateLocationHUD();
+      }
+      batteryFill.style.width=Math.max(0,Math.min(100,battery)).toFixed(0)+'%';
+      renderer.render(scene,camera);
     }
 
-// ===== Start / Pointer Lock =====
-<script type="module">
-  // … dein bestehender Code darüber bleibt unverändert …
+    // Start/Pointer-Lock
+    startBtn.addEventListener('click',()=>{
+      overlay.style.display='none';
+      hud.style.display='block';
+      log('Schicht gestartet. Klicke ins Spielfeld für Maus-Sperre.');
+      animate();
+      try{ controls.lock(); }catch(e){ log('Hinweis: Klicke ins Spielfeld, um die Maus zu sperren.'); }
+    });
+    controls.addEventListener('lock',()=>{ hud.style.display='block'; log('Maus gesperrt – Steuerung aktiv.'); });
+    controls.addEventListener('unlock',()=>{ hud.style.display='block'; log('Maus freigegeben.'); });
+    document.addEventListener('pointerlockerror',()=>{ log('Pointer-Lock-Fehler: Klicke direkt ins Canvas.'); });
+    renderer.domElement.addEventListener('pointerdown',()=>{ if(!controls.isLocked){ try{controls.lock();}catch(e){ log('Pointer-Lock blockiert – erneut klicken.'); } } });
 
-  // Start-Button: Overlay aus, HUD an, Renderloop an, Pointer-Lock versuchen
-  startBtn.addEventListener('click', () => {
-    try {
-      overlay.style.display = 'none';
-      ensureAudio();
-      hud.style.display = 'block';
-      log('Schicht gestartet. Tipp: Klicke ins Spielfeld für Maus-Sperre.');
-      animate();                   // Renderloop starten
-      try { controls.lock(); }     // Pointer-Lock versuchen
-      catch(e){ log('Hinweis: Klicke ins Spielfenster, um die Maus zu sperren.'); }
-    } catch(err) {
-      console.error(err);
-      alert('Startfehler: ' + err.message);
-    }
-  });
-
-  // Pointer-Lock Events + Fallback
-  controls.addEventListener('lock', ()=>{ hud.style.display='block'; log('Maus gesperrt – Steuerung aktiv.'); });
-  controls.addEventListener('unlock', ()=>{ hud.style.display='block'; log('Maus freigegeben. Klicke ins Spiel, um fortzufahren.'); });
-  document.addEventListener('pointerlockerror', ()=>{ log('Pointer-Lock-Fehler: Klicke direkt ins Canvas.'); });
-
-  renderer.domElement.addEventListener('pointerdown', ()=>{
-    if(!controls.isLocked){
-      try { controls.lock(); } catch(e){ log('Pointer-Lock blockiert – erneut klicken.'); }
-    }
-  });
-
-  // ===== Build & Boot =====
-  buildWorld();
-  initEvents();
-  refreshInventoryUI();
-
-  // Resize
-  window.addEventListener('resize', ()=>{
-    camera.aspect = window.innerWidth/window.innerHeight; camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-  });
-
-  // Interact-Hint Loop
-  (function updateHint(){
-    if(!controls.isLocked){ hintEl.style.opacity = 0; }
-    else {
-      raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
-      const hits = raycaster.intersectObjects(interactables, false);
-      hintEl.style.opacity = (hits.length>0 && hits[0].distance<2.2) ? 1 : 0;
-    }
-    requestAnimationFrame(updateHint);
-  })();
-</script>
+    // Resize + Hint
+    addEventListener('resize',()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); });
+    (function loopHint(){
+      if(!controls.isLocked){ hintEl.style.opacity=0; }
+      else{
+        raycaster.setFromCamera(new THREE.Vector2(0,0),camera);
+        const hits=raycaster.intersectObjects(interactables,false);
+        hintEl.style.opacity=(hits.length>0 && hits[0].distance<2.2)?1:0;
+      }
+      requestAnimationFrame(loopHint);
+    })();
+  </script>
+</body>
+</html>
