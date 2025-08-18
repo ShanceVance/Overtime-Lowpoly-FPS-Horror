@@ -21,7 +21,7 @@
     .btn { display:inline-block; background:#0d6efd; border:none; color:white; padding:12px 18px; border-radius:10px; cursor:pointer; font-weight:600; margin-top:12px; }
     .btn:active { transform: translateY(1px); }
 
-    #hud { position:fixed; inset:0; pointer-events:none; z-index:10; }
+    #hud { position:fixed; inset:0; pointer-events:none; z-index:10; display:none; }
     #topbar { position:absolute; top:12px; left:50%; transform:translateX(-50%); background:var(--ui-bg); border:1px solid var(--ui-border); border-radius:999px; padding:8px 14px; font-size:14px; display:flex; gap:16px; align-items:center; }
     #status { position:absolute; bottom:12px; left:12px; background:var(--ui-bg); border:1px solid var(--ui-border); border-radius:12px; padding:10px 14px; font-size:14px; line-height:1.5; max-width:360px; }
     #objective { font-weight:600; color:var(--accent); }
@@ -58,7 +58,7 @@
         <li><b>I</b> Inventar, <b>M</b> Menü/Tipps, <b>Esc</b> Maus freigeben</li>
       </ul>
       <button id="startBtn" class="btn">Schicht starten</button>
-      <div class="small muted" style="margin-top:8px;">Hinweis: Läuft als reines HTML5/WebGL (Three.js). Für Module bitte über einen lokalen Webserver öffnen.</div>
+      <div class="small muted" style="margin-top:8px;">Hinweis: Läuft als reines HTML5/WebGL (Three.js). Über HTTPS/Server öffnen.</div>
     </div>
   </div>
 
@@ -102,11 +102,11 @@
   </div>
 
   <script type="module">
-    // ===== Imports =====
+    /* ===== Imports ===== */
     import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
     import { PointerLockControls } from 'https://unpkg.com/three@0.160.0/examples/jsm/controls/PointerLockControls.js';
 
-    // ===== Renderer/Scene/Camera =====
+    /* ===== Renderer/Scene/Camera ===== */
     const renderer = new THREE.WebGLRenderer({ antialias:true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -116,14 +116,13 @@
     scene.background = new THREE.Color(0x000000);
 
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 200);
-    camera.position.set(0, 1.7, 1.5);
+    camera.position.set(0, 1.7, 6);
 
     const controls = new PointerLockControls(camera, renderer.domElement);
 
-    // ===== Lighting =====
+    /* ===== Lighting ===== */
     const hemi = new THREE.HemisphereLight(0x222233, 0x000000, 0.2);
     scene.add(hemi);
-
     const ambient = new THREE.AmbientLight(0x111122, 0.15);
     scene.add(ambient);
 
@@ -135,7 +134,7 @@
     camera.add(flashlight.target);
     scene.add(camera);
 
-    // ===== Materials =====
+    /* ===== Materials ===== */
     const matWall = new THREE.MeshStandardMaterial({ color:0x222428, roughness:0.9, metalness:0.0 });
     const matFloor = new THREE.MeshStandardMaterial({ color:0x1a1b1e, roughness:1.0, metalness:0.0 });
     const matAccent = new THREE.MeshStandardMaterial({ color:0x2a4b6a, roughness:0.8 });
@@ -143,7 +142,7 @@
     const matInteract = new THREE.MeshStandardMaterial({ color:0x35577a, emissive:0x0d2333, emissiveIntensity:0.2 });
     const matPickup = new THREE.MeshStandardMaterial({ color:0x80ffb3, emissive:0x335544, emissiveIntensity:0.5 });
 
-    // ===== UI elements =====
+    /* ===== UI elements ===== */
     const overlay = document.getElementById('overlay');
     const startBtn = document.getElementById('startBtn');
     const hud = document.getElementById('hud');
@@ -168,7 +167,7 @@
       logEl.prepend(div);
     }
 
-    // ===== Audio (WebAudio) =====
+    /* ===== Audio (WebAudio) ===== */
     let audioCtx;
     function ensureAudio(){
       if(!audioCtx){
@@ -187,7 +186,6 @@
     }
     function hiss(duration=2, vol=0.02){
       if(!audioCtx) return;
-      // simple noise buffer
       const bufferSize = audioCtx.sampleRate * duration;
       const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
       const data = buffer.getChannelData(0);
@@ -197,11 +195,11 @@
       src.connect(g).connect(audioCtx.destination); src.start();
     }
 
-    // ===== World helpers =====
-    const colliders = []; // THREE.Box3[]
-    const interactables = []; // Meshes with userData {type, id}
-    const doors = []; // { pivot:Object3D, door:Mesh, open:boolean, locked:boolean, key?:string, collider?:THREE.Box3 }
-    const pickups = []; // meshes with userData {type:'pickup', item:'...'}
+    /* ===== World helpers ===== */
+    const colliders = [];
+    const interactables = [];
+    const doors = [];
+    const pickups = [];
 
     function addCollider(mesh){
       mesh.updateMatrixWorld(true);
@@ -209,7 +207,6 @@
       colliders.push(box);
       return box;
     }
-
     function box(x,y,z, sx,sy,sz, mat){
       const m = new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz), mat||matWall);
       m.position.set(x,y,z);
@@ -217,152 +214,100 @@
       scene.add(m);
       return m;
     }
-
     function addWallRect(cx, cz, w, h, thickness=0.25, height=3){
       const y = height/2;
-      // North
       addCollider( box(cx, y, cz - h/2, w, height, thickness) );
-      // South
       addCollider( box(cx, y, cz + h/2, w, height, thickness) );
-      // West
       addCollider( box(cx - w/2, y, cz, thickness, height, h) );
-      // East
       addCollider( box(cx + w/2, y, cz, thickness, height, h) );
     }
-
     function addFloorRect(cx, cz, w, h){
       const floor = new THREE.Mesh(new THREE.BoxGeometry(w, 0.1, h), matFloor);
       floor.position.set(cx, 0, cz);
       floor.receiveShadow = true;
       scene.add(floor);
     }
-
-    // Add a room with optional door openings on each side (N,S,E,W)
-    function addRoom(cx, cz, w, h, openings={N:false,S:false,E:false,W:false}, thickness=0.25, height=3, doorW=1.6){
-      const y = height/2;
-      function addHWall(z, open){
-        if(open){
-          const seg = (w - doorW)/2; // left & right segments
-          addCollider( box(cx - (doorW/2 + seg/2), y, z, seg, height, thickness) );
-          addCollider( box(cx + (doorW/2 + seg/2), y, z, seg, height, thickness) );
-        } else {
-          addCollider( box(cx, y, z, w, height, thickness) );
-        }
-      }
-      function addVWall(x, open){
-        if(open){
-          const seg = (h - doorW)/2;
-          addCollider( box(x, y, cz - (doorW/2 + seg/2), thickness, height, seg) );
-          addCollider( box(x, y, cz + (doorW/2 + seg/2), t
     function addDoorway(cx, cz, width=1.2, height=2.2, thickness=0.2, dir='N', locked=false, key){
-      // create a hinged door (thin box) on a pivot
       const pivot = new THREE.Object3D();
       pivot.position.set(cx, 0, cz);
       scene.add(pivot);
       const door = new THREE.Mesh(new THREE.BoxGeometry(thickness, height, width), matDoor);
-      // hinge at one side depending on dir; we align so that rotating around Y opens
       const y = height/2; door.position.y = y;
       if(dir==='N' || dir==='S'){
-        // door aligned along Z (height) so thickness is X -> rotate around Y
         door.rotation.y = 0;
-        door.position.x = 0; door.position.z = 0;
       } else {
-        // E/W -> swap dims by rotating 90deg
         door.rotation.y = Math.PI/2;
-        door.position.x = 0; door.position.z = 0;
       }
       pivot.add(door);
       const entry = { pivot, door, open:false, locked, key: key||null, collider: null };
-      // collider when closed
       const temp = new THREE.Box3().setFromObject(door);
       entry.collider = temp; colliders.push(temp);
-
-      // add to interactables for E action
       door.userData = { type:'door', ref: entry };
       interactables.push(door);
       doors.push(entry);
       return entry;
     }
-
     function updateDoorCollider(entry){
-      // refresh collider bbox for closed door
       if(entry.open){ return; }
       entry.door.updateMatrixWorld(true);
       entry.collider.setFromObject(entry.door);
     }
 
-    // ===== Map (defaults) =====
-    // Units: meters. Y up. Player at Lobby.
-    // Areas: Lobby(0,0), Corridor(0,-7), Office(-12,-7), Server(-22,-7), Archive(12,-7), Toilets(0,7), Basement(0,-24), Parking(0,-18)
-
+    /* ===== Map (defaults) ===== */
     function buildWorld(){
-      // Big floor plate
       addFloorRect(0, 0, 60, 60);
-      // Perimeter walls
       addWallRect(0, 0, 56, 56);
 
-      // Rooms floors (visual blocks)
-      addFloorRect(0, 0, 10, 8); // Lobby
-      addFloorRect(0, -7, 20, 4); // Corridor
-      addFloorRect(-12, -7, 10, 8); // Office
-      addFloorRect(-22, -7, 8, 6); // Server
-      addFloorRect(12, -7, 10, 8); // Archive
-      addFloorRect(0, 7, 8, 6); // Toilets
-      addFloorRect(0, -18, 12, 8); // Parking gate area
-      addFloorRect(0, -24, 10, 8); // Basement
+      addFloorRect(0, 0, 10, 8);      // Lobby
+      addFloorRect(0, -7, 20, 4);     // Corridor
+      addFloorRect(-12, -7, 10, 8);   // Office
+      addFloorRect(-22, -7, 8, 6);    // Server
+      addFloorRect(12, -7, 10, 8);    // Archive
+      addFloorRect(0, 7, 8, 6);       // Toilets
+      addFloorRect(0, -18, 12, 8);    // Parking
+      addFloorRect(0, -24, 10, 8);    // Basement
 
-      // Interior walls (rect shells)
-      addWallRect(0, 0, 10, 8); // Lobby shell
-      addWallRect(0, -7, 20, 4); // Corridor shell
-      addWallRect(-12, -7, 10, 8); // Office shell
-      addWallRect(-22, -7, 8, 6); // Server shell
-      addWallRect(12, -7, 10, 8); // Archive shell
-      addWallRect(0, 7, 8, 6); // Toilets shell
-      addWallRect(0, -18, 12, 8); // Parking shell
-      addWallRect(0, -24, 10, 8); // Basement shell
+      addWallRect(0, 0, 10, 8);
+      addWallRect(0, -7, 20, 4);
+      addWallRect(-12, -7, 10, 8);
+      addWallRect(-22, -7, 8, 6);
+      addWallRect(12, -7, 10, 8);
+      addWallRect(0, 7, 8, 6);
+      addWallRect(0, -18, 12, 8);
+      addWallRect(0, -24, 10, 8);
 
-      // Doorways (we don't physically cut walls; doors live inside shells, act as blockers)
-      addDoorway(0, -3, 1.4, 2.2, 0.18, 'S', false); // Lobby -> Corridor
-      addDoorway(-7, -7, 1.4, 2.2, 0.18, 'E', false); // Corridor -> Office
-      addDoorway(-17, -7, 1.4, 2.2, 0.18, 'E', true, 'srv_key'); // Office -> Server (locked)
-      addDoorway(7, -7, 1.4, 2.2, 0.18, 'W', true, 'arc_key'); // Corridor -> Archive (locked)
-      addDoorway(0, 3, 1.2, 2.1, 0.18, 'N', false); // Lobby -> Toilets
-      addDoorway(0, -11, 1.6, 2.2, 0.18, 'S', true, 'basement_key'); // Corridor -> Parking
-      addDoorway(0, -20, 1.6, 2.2, 0.18, 'S', true, 'gate_card'); // Parking -> Outside (escape)
-      addDoorway(2, -9, 1.2, 2.0, 0.18, 'S', true, 'basement_key'); // Corridor -> Basement stair (symbolic)
+      addDoorway(0, -3, 1.4, 2.2, 0.18, 'S', false);
+      addDoorway(-7, -7, 1.4, 2.2, 0.18, 'E', false);
+      addDoorway(-17, -7, 1.4, 2.2, 0.18, 'E', true, 'srv_key');
+      addDoorway(7, -7, 1.4, 2.2, 0.18, 'W', true, 'arc_key');
+      addDoorway(0, 3, 1.2, 2.1, 0.18, 'N', false);
+      addDoorway(0, -11, 1.6, 2.2, 0.18, 'S', true, 'basement_key');
+      addDoorway(0, -20, 1.6, 2.2, 0.18, 'S', true, 'gate_card');
+      addDoorway(2, -9, 1.2, 2.0, 0.18, 'S', true, 'basement_key');
 
-      // Props (computers, desks, server racks)
-      // Lobby desk
       const lobbyDesk = box(-2, 0.75, 1, 2.4, 1.5, 0.9, matAccent);
-      // Office desks
       for(let i=0;i<3;i++){
         box(-10 - i*1.6, 0.75, -5.5, 1.2, 1.5, 0.8, matAccent);
       }
-      // A computer (interactive)
       const pc = box(-12, 1.1, -5.2, 0.6, 0.4, 0.4, matInteract);
       pc.userData = { type:'computer', id:'office_pc' };
       interactables.push(pc);
 
-      // Server racks
       for(let i=0;i<2;i++){
         const rack = box(-22, 1.5, -6 + i*2, 1.0, 3.0, 0.8, matInteract);
         rack.userData = { type:'server', id:'srv_'+i };
         interactables.push(rack);
       }
-
-      // Archive shelves
       for(let i=0;i<3;i++){
         box(12, 1.25, -9 + i*2, 2.0, 2.5, 0.5, matWall);
       }
 
-      // Toilets mirror (panel)
-      const mirror = new THREE.Mesh(new THREE.BoxGeometry(1.6,1.0,0.05), new THREE.MeshStandardMaterial({ color:0x223344, metalness:0.8, roughness:0.2, envMapIntensity:0.0 }));
+      const mirror = new THREE.Mesh(new THREE.BoxGeometry(1.6,1.0,0.05), new THREE.MeshStandardMaterial({ color:0x223344, metalness:0.8, roughness:0.2 }));
       mirror.position.set(0, 1.6, 5.2);
       scene.add(mirror);
       mirror.userData = { type:'mirror', id:'toilet_mirror' };
       interactables.push(mirror);
 
-      // Pickups (keys, batteries)
       function addPickup(x,y,z, item, label){
         const m = new THREE.Mesh(new THREE.BoxGeometry(0.2,0.2,0.2), matPickup);
         m.position.set(x,y,z);
@@ -376,17 +321,14 @@
       addPickup(-12.8, 0.9, -6.2, 'battery', 'Batterie');
       addPickup(12.2, 0.9, -7.8, 'battery', 'Batterie');
 
-      // Lighting props (practical lights)
       const corridorLight = new THREE.PointLight(0xbfd9ff, 1.4, 12, 1.4); corridorLight.position.set(0,2.6,-7); scene.add(corridorLight);
       const officeLight = new THREE.PointLight(0xbfd9ff, 1.2, 10, 1.2); officeLight.position.set(-12,2.6,-7); scene.add(officeLight);
       const lobbyLight = new THREE.PointLight(0xbfd9ff, 0.9, 10, 1.2); lobbyLight.position.set(0,2.6,0); scene.add(lobbyLight);
       const toiletLight = new THREE.PointLight(0x9fd0ff, 0.8, 8, 1.2); toiletLight.position.set(0,2.5,7); scene.add(toiletLight);
       const archiveLight = new THREE.PointLight(0xbfd9ff, 1.0, 10, 1.2); archiveLight.position.set(12,2.6,-7); scene.add(archiveLight);
       const serverLight = new THREE.PointLight(0x8bb0ff, 0.7, 10, 1.3); serverLight.position.set(-22,2.6,-7); scene.add(serverLight);
-
       worldLights.push(corridorLight, officeLight, lobbyLight, toiletLight, archiveLight, serverLight);
 
-      // Location triggers to update HUD location
       locZones.push({name:'Lobby', cx:0, cz:0, w:10, h:8});
       locZones.push({name:'Flur', cx:0, cz:-7, w:20, h:4});
       locZones.push({name:'Großraumbüro', cx:-12, cz:-7, w:10, h:8});
@@ -396,16 +338,15 @@
       locZones.push({name:'Parkhaus', cx:0, cz:-18, w:12, h:8});
       locZones.push({name:'Keller', cx:0, cz:-24, w:10, h:8});
 
-      // Interactables: doors are already added; also add a phone in Lobby
       const phone = box(-1.2, 1.0, 0.8, 0.3, 0.1, 0.3, matInteract);
       phone.userData = { type:'phone', id:'lobby_phone' };
       interactables.push(phone);
     }
 
-    // ===== Player / Input =====
+    /* ===== Player / Input ===== */
     const keys = { w:false, a:false, s:false, d:false, shift:false };
     let flashOn = false;
-    let battery = 100; // %
+    let battery = 100;
     let batteryLowWarned = false;
 
     document.addEventListener('keydown', (e)=>{
@@ -433,17 +374,16 @@
       flashOn = !flashOn;
       flashlight.intensity = flashOn ? 2.0 : 0.0;
       if(flashOn){
-        if(!audioCtx) ensureAudio(); beep(420, 0.05, 'triangle', 0.02);
+        ensureAudio(); beep(420, 0.05, 'triangle', 0.02);
       }
     }
-
     function toggleInventory(){
       const open = inventoryUI.style.display === 'flex';
       inventoryUI.style.display = open ? 'none' : 'flex';
     }
     closeInv.addEventListener('click', ()=> toggleInventory());
 
-    // ===== Inventory & Tasks =====
+    /* ===== Inventory & Tasks ===== */
     const inventory = new Set();
     const flags = { emailTask:false, backupTask:false, ghostSeen:false };
 
@@ -454,9 +394,7 @@
         const span = document.createElement('span'); span.className='tag'; span.textContent = it; invTags.appendChild(span);
       });
     }
-
     function hasItem(key){ return inventory.has(key); }
-
     function grantItem(it, label){
       if(!inventory.has(it)){
         inventory.add(it); refreshInventoryUI();
@@ -464,10 +402,8 @@
       }
     }
 
-    // ===== Interaction via Raycast =====
+    /* ===== Interaction via Raycast ===== */
     const raycaster = new THREE.Raycaster();
-    const tmpV = new THREE.Vector3();
-
     function tryInteract(){
       raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
       const hits = raycaster.intersectObjects(interactables, false);
@@ -484,12 +420,9 @@
         }
       }
     }
-
     function onDoorInteract(entry){
       if(entry.open){
-        // close
         entry.open=false; entry.pivot.rotation.y = 0;
-        // re-enable collider
         if(entry.collider && !colliders.includes(entry.collider)) colliders.push(entry.collider);
         updateDoorCollider(entry);
         beep(200,0.08,'sawtooth',0.02);
@@ -500,15 +433,12 @@
         beep(140,0.08,'square',0.03);
         return;
       }
-      // unlock if key present
       entry.locked = false;
       entry.open = true;
       entry.pivot.rotation.y = -Math.PI/2;
-      // disable collider while open
       const idx = colliders.indexOf(entry.collider); if(idx>=0) colliders.splice(idx,1);
       beep(600,0.06,'triangle',0.02);
     }
-
     function onPickup(obj){
       const { item, label } = obj.userData;
       if(item==='battery'){
@@ -522,7 +452,7 @@
     }
 
     // Work task UI (emails)
-    let working = false; let workStart=0; let workDuration=9000; // 9s
+    let working = false; let workStart=0; let workDuration=9000;
     function onComputer(){
       if(flags.emailTask){ log('Mails bereits erledigt.'); return; }
       workUI.style.display='flex'; working=true; workStart=performance.now(); workDuration=9000;
@@ -530,23 +460,13 @@
     }
     cancelWork.addEventListener('click', ()=>{ working=false; workUI.style.display='none'; });
 
-    function onServer(obj){
-      log('Server überprüft. Summen wird lauter …'); ensureAudio(); hiss(1.5, 0.02);
-    }
+    function onServer(){ log('Server überprüft. Summen wird lauter …'); ensureAudio(); hiss(1.5, 0.02); }
+    function onPhone(){ log('Niemand am Apparat. Nur Atmen.'); ensureAudio(); beep(880,0.08,'sine',0.02); beep(660,0.08,'sine',0.02); }
+    function onMirror(){ log('Dein Spiegelbild blinzelt verzögert.'); ensureAudio(); hiss(1.2, 0.03); }
 
-    function onPhone(){
-      log('Niemand am Apparat. Nur Atmen.'); ensureAudio(); beep(880,0.08,'sine',0.02); beep(660,0.08,'sine',0.02);
-    }
-
-    function onMirror(){
-      log('Dein Spiegelbild blinzelt verzögert.'); ensureAudio(); hiss(1.2, 0.03);
-    }
-
-    // ===== Movement & Collision =====
+    /* ===== Movement & Collision ===== */
     const speedWalk = 2.2; const speedRun = 4.0;
-
     function collidesAt(pos){
-      // Player radius ~0.3
       for(const b of colliders){
         if(pos.y < b.max.y && pos.y > b.min.y){
           if(pos.x > b.min.x-0.3 && pos.x < b.max.x+0.3 && pos.z > b.min.z-0.3 && pos.z < b.max.z+0.3){
@@ -556,7 +476,6 @@
       }
       return false;
     }
-
     function movePlayer(delta){
       const dir = new THREE.Vector3();
       const forward = new THREE.Vector3();
@@ -570,22 +489,18 @@
       if(dir.lengthSq()>0){ dir.normalize().multiplyScalar(spd*delta); }
 
       const p = camera.position.clone();
-      // X axis
       const tryX = p.clone().add(new THREE.Vector3(dir.x, 0, 0));
       if(!collidesAt(tryX)) camera.position.x = tryX.x;
-      // Z axis
       const tryZ = camera.position.clone().add(new THREE.Vector3(0, 0, dir.z));
       if(!collidesAt(tryZ)) camera.position.z = tryZ.z;
-
-      // Keep head height fixed
       camera.position.y = 1.7;
     }
 
-    // ===== Game Time & Events =====
+    /* ===== Game Time & Events ===== */
     const startTime = { h:20, m:0 };
-    let gameMinutes = 0; // minutes since 20:00
-    const minutesToSurvive = 5*60; // 300
-    const secPerGameMinute = 10; // 50 real min total
+    let gameMinutes = 0;
+    const minutesToSurvive = 5*60;
+    const secPerGameMinute = 10;
 
     function fmtTime(){
       const total = startTime.h*60 + startTime.m + gameMinutes;
@@ -593,12 +508,8 @@
       return (h<10?'0'+h:h)+":"+(m<10?'0'+m:m);
     }
 
-    // World lights
     const worldLights = [];
-
-    // Location zones for HUD
     const locZones = [];
-
     function updateLocationHUD(){
       const x = camera.position.x, z = camera.position.z;
       for(const zc of locZones){
@@ -606,41 +517,31 @@
       }
     }
 
-    // Event scheduler
     const events = [];
     function scheduleEvent(atMin, fn, id){ events.push({ at: atMin, fn, id, fired:false }); }
-
     function initEvents(){
-      // 22:40 mirror flicker
-      scheduleEvent(160, ()=>{ // 20:00 + 160 = 22:40
+      scheduleEvent(160, ()=>{
         log('Das Licht im Bad flackert …'); ensureAudio(); hiss(2, 0.03);
-        // dim a light briefly
         const L = worldLights.find(l=>Math.abs(l.position.z-7)<0.5);
         if(L){ let n=0; const int = setInterval(()=>{ L.intensity = L.intensity<0.2?0.9:0.1; n++; if(n>8){ clearInterval(int); L.intensity=0.8; } }, 180); }
       }, 'toilet_flicker');
 
-      // 23:30 phone rings
       scheduleEvent(210, ()=>{
         log('Das Telefon in der Lobby klingelt …'); ensureAudio();
         let n=0; const int = setInterval(()=>{ beep(1000,0.1,'square',0.03); n++; if(n>8) clearInterval(int); }, 450);
       }, 'phone_ring');
 
-      // 00:00 corridor shadow
       scheduleEvent(240, ()=>{
         spawnShadowGlimpse(0,-7);
         log('Etwas huscht im Flur vorbei.'); ensureAudio(); hiss(1.2, 0.03);
       }, 'corridor_shadow');
 
-      // 00:30 active threat (door rattling)
       scheduleEvent(270, ()=>{
         log('Eine Tür rüttelt heftig irgendwo …'); ensureAudio();
         for(const d of doors){ if(Math.random()<0.3 && !d.open){ d.pivot.rotation.y = 0.05; setTimeout(()=>{ d.pivot.rotation.y = 0; }, 800); } }
       }, 'door_rattle');
 
-      // 01:00 end survive if still inside
-      scheduleEvent(300, ()=>{
-        endGame('survive');
-      }, 'end_survive');
+      scheduleEvent(300, ()=>{ endGame('survive'); }, 'end_survive');
     }
 
     function spawnShadowGlimpse(cx, cz){
@@ -651,7 +552,7 @@
       setTimeout(()=>{ scene.remove(s); }, 800);
     }
 
-    // ===== Endings =====
+    /* ===== Endings ===== */
     let ended = false;
     function endGame(type){
       if(ended) return; ended = true;
@@ -665,17 +566,15 @@
       `;
       document.getElementById('restartBtn').addEventListener('click', ()=>{ location.reload(); });
     }
-
     function tryEscapeCheck(){
-      // If player near outside door area after opening gate_card door before 00:45 -> escape
       const timeStr = fmtTime();
       const h = parseInt(timeStr.slice(0,2)); const m = parseInt(timeStr.slice(3));
-      const before0045 = (h<0) || (h===0 && m<45) || (h===23) || (h===20 || h===21 || h===22);
+      const before0045 = (h===0 && m<45) || h===20 || h===21 || h===22 || h===23;
       if(before0045){ endGame('escape'); }
       else { log('Zu spät … das System lässt dich nicht gehen.'); }
     }
 
-    // ===== Save/Load =====
+    /* ===== Save/Load ===== */
     function saveGame(){
       const data = {
         pos: { x: camera.position.x, y: camera.position.y, z: camera.position.z },
@@ -691,29 +590,24 @@
       if(!raw){ log('Kein Speicherstand gefunden.'); return; }
       const data = JSON.parse(raw);
       camera.position.set(data.pos.x, data.pos.y, data.pos.z);
-      inventory.clear(); data.inv.forEach(i=>inventory.add(i)); refreshInventoryUI();
+      inventory.clear(); (data.inv||[]).forEach(i=>inventory.add(i)); refreshInventoryUI();
       Object.assign(flags, data.flags||{});
       gameMinutes = data.gameMinutes||0; battery = data.battery ?? 100;
       log('Spielstand geladen.');
     }
 
-    // ===== Game Loop =====
+    /* ===== Game Loop ===== */
     const clock = new THREE.Clock();
-    let accTime = 0; // for game minute ticking
-
+    let accTime = 0;
     function update(delta){
       if(controls.isLocked){
         movePlayer(delta);
         updateLocationHUD();
-        // flashlight battery drain
         if(flashOn){ battery -= delta*0.9; if(battery<0) battery=0; flashlight.intensity = battery>2? 2.0: 0.0; }
         if(!batteryLowWarned && battery<20){ tipEl.textContent = 'Batterie fast leer.'; batteryLowWarned=true; log('Batterie fast leer.'); }
-        // auto-use battery item
         if(battery<5 && inventory.has('battery')){ inventory.delete('battery'); battery = Math.min(100, battery+50); refreshInventoryUI(); log('Automatisch: Batterie eingesetzt.'); }
 
-        // work task progress if active and player near PC
         if(working){
-          // simple distance check to PC
           const pcPos = new THREE.Vector3(-12, 1.1, -5.2);
           if(camera.position.distanceTo(pcPos) < 2.5){
             const p = Math.min(1, (performance.now()-workStart)/workDuration); workFill.style.width = (p*100).toFixed(1)+'%';
@@ -723,73 +617,66 @@
           }
         }
 
-        // game clock
         accTime += delta;
         if(accTime >= secPerGameMinute){ accTime -= secPerGameMinute; gameMinutes++; clockEl.textContent = fmtTime(); }
 
-        // run scheduled events
         for(const ev of events){ if(!ev.fired && gameMinutes >= ev.at){ ev.fired=true; ev.fn(); } }
 
-        // update door colliders while closed
         doors.forEach(updateDoorCollider);
 
-        // doorway-specific checks: leaving via gate
-        // detect if player passes beyond parking door z < -22 (outside)
         if(camera.position.z < -22){ tryEscapeCheck(); }
       }
-      // HUD battery bar
       batteryFill.style.width = Math.max(0, Math.min(100, battery)).toFixed(0)+'%';
     }
-
     function animate(){
       requestAnimationFrame(animate);
-      const delta = Math.min(0.033, clock.getDelta()); // clamp to ~30fps for physics
+      const delta = Math.min(0.033, clock.getDelta());
       update(delta);
       renderer.render(scene, camera);
     }
 
-    // ===== Start / Pointer Lock =====
+    /* ===== Start / Pointer Lock ===== */
     startBtn.addEventListener('click', ()=>{
-      // Hide overlay and boot regardless of pointer lock success
       overlay.style.display='none';
       ensureAudio();
-      animate();
-      // Try pointer lock immediately, but also allow clicking canvas later
-      try { controls.lock(); } catch(e) { log('Hinweis: Klicke ins Spielfenster, um die Maus zu sperren.'); }
       hud.style.display='block';
       log('Schicht gestartet. Tipp: Klicke ins Spielfenster für Maus-Sperre.');
-    });
-      controls.lock();
       animate();
+      try { controls.lock(); } catch(e) { log('Hinweis: Klicke ins Spielfenster, um die Maus zu sperren.'); }
     });
 
     controls.addEventListener('lock', ()=>{ hud.style.display='block'; log('Maus gesperrt – Steuerung aktiv.'); });
     controls.addEventListener('unlock', ()=>{ hud.style.display='block'; log('Maus freigegeben. Klicke ins Spiel, um fortzufahren.'); });
-    document.addEventListener('pointerlockerror', ()=>{ log('Pointer-Lock-Fehler: Der Browser hat die Maus-Sperre blockiert. Klicke direkt ins Spielfeld.'); });
+    document.addEventListener('pointerlockerror', ()=>{ log('Pointer-Lock-Fehler: Browser blockiert. Klicke direkt ins Canvas.'); });
+    renderer.domElement.addEventListener('pointerdown', ()=>{
+      if(!controls.isLocked){
+        try { controls.lock(); } catch(e){ log('Pointer-Lock blockiert – klicke erneut ins Spielfenster.'); }
+      }
+    });
 
-    renderer.domElement.addEventListener('pointerdown', ()=>{ if(!controls.isLocked){ try { controls.lock(); } catch(e){ log('Pointer-Lock blockiert – klicke erneut ins Spielfenster.'); } } }); } });
-
-    // ===== Build & Boot =====
+    /* ===== Build & Boot ===== */
+    const worldLights = [];
+    const locZones = [];
     buildWorld();
     initEvents();
     refreshInventoryUI();
 
-    // ===== Resize =====
+    /* ===== Resize ===== */
     window.addEventListener('resize', ()=>{
       camera.aspect = window.innerWidth/window.innerHeight; camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
-    // ===== Interaction hint visibility =====
-    function updateHint(){
-      if(!controls.isLocked){ hintEl.style.opacity = 0; return; }
-      raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
-      const hits = raycaster.intersectObjects(interactables, false);
-      if(hits.length>0 && hits[0].distance<2.2){ hintEl.style.opacity = 1; } else { hintEl.style.opacity = 0; }
+    /* ===== Interaction hint visibility ===== */
+    (function updateHint(){
+      if(!controls.isLocked){ hintEl.style.opacity = 0; }
+      else{
+        raycaster.setFromCamera(new THREE.Vector2(0,0), camera);
+        const hits = raycaster.intersectObjects(interactables, false);
+        hintEl.style.opacity = (hits.length>0 && hits[0].distance<2.2) ? 1 : 0;
+      }
       requestAnimationFrame(updateHint);
-    }
-    updateHint();
-
+    })();
   </script>
 </body>
 </html>
