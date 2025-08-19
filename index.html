@@ -2,16 +2,13 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Overtime – Lowpoly FPS Horror</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Überstunden – Lowpoly FPS Horror</title>
   <style>
     :root { --fg:#eaeaf2; --bg:#000; }
     html,body { margin:0; height:100%; background:var(--bg); color:var(--fg); font-family:Inter,system-ui,Segoe UI,Arial,sans-serif; overflow:hidden; }
-    #overlay {
-      position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
-      background:radial-gradient(1000px 600px at 50% 50%, rgba(0,0,0,.35), rgba(0,0,0,.92));
-      z-index:5;
-    }
+    #overlay { position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+      background:radial-gradient(1000px 600px at 50% 50%, rgba(0,0,0,.35), rgba(0,0,0,.92)); z-index:5; }
     .panel { max-width:720px; padding:24px; border-radius:14px; background:rgba(15,15,20,.6); border:1px solid rgba(255,255,255,.12); backdrop-filter:blur(6px); }
     .panel h1 { margin:0 0 10px; font-size:26px; }
     .btn { display:inline-block; margin-top:10px; padding:12px 18px; border-radius:10px; background:#0d6efd; color:#fff; border:none; cursor:pointer; font-weight:600; }
@@ -32,9 +29,18 @@
   <div id="crosshair"></div>
   <div id="hint">Klicke ins Spiel, um die Maus zu sperren</div>
 
+  <!-- Import Map: macht "three" im Browser auflösbar -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.150.1/build/three.module.js"
+    }
+  }
+  </script>
+
   <script type="module">
-    import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.module.js";
-    import { PointerLockControls } from "https://cdn.jsdelivr.net/npm/three@0.150.1/examples/jsm/controls/PointerLockControls.js";
+    import * as THREE from "three";
+    import { PointerLockControls } from "https://unpkg.com/three@0.150.1/examples/jsm/controls/PointerLockControls.js";
 
     // DOM
     const overlay = document.getElementById('overlay');
@@ -83,7 +89,7 @@
       const dir = new THREE.DirectionalLight(0xffffff, 0.6);
       dir.position.set(5,10,7); scene.add(dir);
 
-      // Floor
+      // Floor + Wand (damit Bewegung sichtbar ist)
       const floor = new THREE.Mesh(
         new THREE.PlaneGeometry(100,100),
         new THREE.MeshStandardMaterial({ color:0x222222, roughness:1 })
@@ -92,7 +98,6 @@
       floor.receiveShadow = true;
       scene.add(floor);
 
-      // Simple walls (damit Bewegung sichtbar ist)
       const wallMat = new THREE.MeshStandardMaterial({ color:0x2a2d34, roughness:.9 });
       const wall = new THREE.Mesh(new THREE.BoxGeometry(20,3,0.3), wallMat);
       wall.position.set(0,1.5,-10); scene.add(wall);
@@ -100,11 +105,8 @@
       // Pointer Lock
       controls = new PointerLockControls(camera, renderer.domElement);
       scene.add(controls.getObject());
-
       controls.addEventListener('lock', ()=>{ crosshair.style.display='block'; hint.style.display='none'; });
       controls.addEventListener('unlock', ()=>{ crosshair.style.display='none'; hint.style.display='block'; });
-
-      // Klick sperrt Maus
       renderer.domElement.addEventListener('pointerdown', ()=>{ if(!controls.isLocked) controls.lock(); });
 
       // Resize
@@ -116,24 +118,22 @@
 
     function animate(){
       requestAnimationFrame(animate);
-
       const delta = clock.getDelta();
 
       // Dämpfung
       velocity.x -= velocity.x * 10 * delta;
       velocity.z -= velocity.z * 10 * delta;
 
-      // Bewegungsrichtung
+      // Richtung
       direction.z = (keys.w?1:0) - (keys.s?1:0);
       direction.x = (keys.d?1:0) - (keys.a?1:0);
       if(direction.lengthSq()>0) direction.normalize();
 
       // Geschwindigkeit
-      const speed = keys.shift ? 8.0 : 4.0; // m/s
+      const speed = keys.shift ? 8.0 : 4.0;
       velocity.z -= direction.z * speed * 10 * delta;
       velocity.x -= direction.x * speed * 10 * delta;
 
-      // Anwenden
       if(controls && controls.isLocked){
         controls.moveForward(-velocity.z * delta);
         controls.moveRight(-velocity.x * delta);
